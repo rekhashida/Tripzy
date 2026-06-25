@@ -86,14 +86,37 @@ const googleLogin = async (req, res) => {
 
     if (rows.length > 0) {
       user = rows[0];
+      // If user exists as a 'user' but clicked a Driver mock account, promote them
+      const targetRole = (email.toLowerCase().includes('driver') || name.toLowerCase().includes('driver')) ? 'driver' : user.role;
+      if (user.role !== 'driver' && targetRole === 'driver') {
+        await pool.query('UPDATE users SET role = ? WHERE id = ?', ['driver', user.id]);
+        const [drvRows] = await pool.query('SELECT * FROM drivers WHERE user_id = ?', [user.id]);
+        if (drvRows.length === 0) {
+          await pool.query(
+            'INSERT INTO drivers (user_id, license_number, vehicle_type, vehicle_number) VALUES (?, ?, ?, ?)',
+            [user.id, 'MOCK_LIC_' + Date.now().toString().slice(-4), 'sedan', 'MOCK_VEH_' + Date.now().toString().slice(-4)]
+          );
+        }
+        user.role = 'driver';
+      }
     } else {
-      // Auto-register new user (generate a safe, unique mock phone under 20 chars)
+      // Auto-register new user
       const mockPhone = 'G_' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 10);
       const mockPassword = 'google_pass_' + Math.random().toString(36).slice(-8);
+      const role = (email.toLowerCase().includes('driver') || name.toLowerCase().includes('driver')) ? 'driver' : 'user';
+
       const [insertResult] = await pool.query(
         'INSERT INTO users (name, email, password, phone, role) VALUES (?, ?, ?, ?, ?)',
-        [name, email, mockPassword, mockPhone, 'user']
+        [name, email, mockPassword, mockPhone, role]
       );
+      
+      if (role === 'driver') {
+        await pool.query(
+          'INSERT INTO drivers (user_id, license_number, vehicle_type, vehicle_number) VALUES (?, ?, ?, ?)',
+          [insertResult.insertId, 'MOCK_LIC_' + Date.now().toString().slice(-4), 'sedan', 'MOCK_VEH_' + Date.now().toString().slice(-4)]
+        );
+      }
+
       const [newRows] = await pool.query('SELECT * FROM users WHERE id = ?', [insertResult.insertId]);
       user = newRows[0];
     }
