@@ -12,6 +12,7 @@ CREATE TABLE users (
   password VARCHAR(255) NOT NULL,
   phone VARCHAR(20) UNIQUE NOT NULL,
   role ENUM('user', 'driver', 'admin') DEFAULT 'user',
+  wallet_balance DECIMAL(10,2) DEFAULT 500.00,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -21,7 +22,7 @@ CREATE TABLE drivers (
   id INT PRIMARY KEY AUTO_INCREMENT,
   user_id INT UNIQUE NOT NULL,
   license_number VARCHAR(50),
-  vehicle_type ENUM('hatchback', 'sedan', 'suv', 'bike') NOT NULL,
+  vehicle_type ENUM('hatchback', 'sedan', 'suv', 'bike', 'auto') NOT NULL,
   vehicle_number VARCHAR(20),
   is_online BOOLEAN DEFAULT FALSE,
   is_available BOOLEAN DEFAULT TRUE,
@@ -55,7 +56,7 @@ CREATE TABLE rides (
   duration_min INT,
   fare DECIMAL(10,2),
   status ENUM('pending', 'driver_assigned', 'otp_verified', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
-  vehicle_type ENUM('hatchback', 'sedan', 'suv', 'bike'),
+  vehicle_type ENUM('hatchback', 'sedan', 'suv', 'bike', 'auto'),
   luggage_size ENUM('small', 'medium', 'large'),
   is_pooling BOOLEAN DEFAULT FALSE,
   pickup_otp VARCHAR(6),

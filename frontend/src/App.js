@@ -14,6 +14,7 @@ import MyParcels from './pages/MyParcels';
 import AdminDashboard from './pages/AdminDashboard';
 import DriverDashboard from './pages/DriverDashboard';
 import Home from './pages/Home';
+import SupportChatbot from './components/SupportChatbot';
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -48,6 +49,7 @@ function App() {
             <Route path="/driver" element={<RoleRoute roles={["driver"]}><DriverDashboard /></RoleRoute>} />
           </Routes>
         </div>
+        <SupportChatbot />
       </BrowserRouter>
     </AuthProvider>
   );

@@ -222,11 +222,13 @@ export default function DriverDashboard() {
             <div className="stat-label">Total Trips</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{stats.rating.toFixed(1)} <FiStar style={{ marginLeft: '0.5rem', color: 'var(--warning)' }} /></div>
+            <div className="stat-value">
+              {parseFloat(stats.rating || 0).toFixed(1)} <FiStar style={{ marginLeft: '0.5rem', color: 'var(--warning)' }} />
+            </div>
             <div className="stat-label">Driver Rating</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">₹{stats.earnings.toFixed(2)}</div>
+            <div className="stat-value">₹{parseFloat(stats.earnings || 0).toFixed(2)}</div>
             <div className="stat-label">Earnings</div>
           </div>
           <div className="stat-card">

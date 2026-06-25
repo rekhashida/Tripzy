@@ -22,6 +22,8 @@ export default function RealTimeTracking() {
   const [otp, setOtp] = useState('');
   const [otpMsg, setOtpMsg] = useState('');
   const [eta, setEta] = useState(null);
+  const [emergencyPhone, setEmergencyPhone] = useState('');
+  const [showSmsModal, setShowSmsModal] = useState(false);
 
   useEffect(() => {
     loadRide();
@@ -189,8 +191,25 @@ export default function RealTimeTracking() {
 
         {ride.driver_name && (
           <Card style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(236, 72, 153, 0.1))', marginBottom: '1.5rem' }}>
-            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <FiUser /> Driver Information
+            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FiUser /> Driver Information
+              </div>
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                {ride.driver_rating && (
+                  <Badge variant="warning" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>
+                    ⭐ {parseFloat(ride.driver_rating).toFixed(1)}
+                  </Badge>
+                )}
+                {(ride.vehicle_type === 'bike' || ride.vehicle_type === 'auto') && (
+                  <Badge variant="success" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>
+                    🌿 Eco Driver
+                  </Badge>
+                )}
+                <Badge variant="info" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>
+                  ⚡ Quick Responder
+                </Badge>
+              </div>
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               <div>
@@ -298,6 +317,67 @@ export default function RealTimeTracking() {
             <Button variant="outline" onClick={() => setOtpModalOpen(false)}>
               Cancel
             </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Emergency Sharing Section */}
+      {ride && (
+        <Card style={{ background: 'var(--bg-secondary)', marginBottom: '1.5rem', border: '1px solid var(--border-color)' }}>
+          <h3 style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444' }}>
+            🛡️ Safety Shield
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+            Enter a trusted contact to simulate sending an emergency live tracking SMS link.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ flex: '1', minWidth: '200px' }}>
+              <Input
+                label="Emergency Contact Phone"
+                type="text"
+                value={emergencyPhone}
+                onChange={(e) => setEmergencyPhone(e.target.value)}
+                placeholder="e.g. +91 99999 99999"
+              />
+            </div>
+            <Button variant="primary" onClick={() => setShowSmsModal(true)} disabled={!emergencyPhone}>
+              Simulate Emergency Share
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      <Modal
+        isOpen={showSmsModal}
+        onClose={() => setShowSmsModal(false)}
+        title="Simulated Emergency SMS Sent"
+      >
+        <div style={{ padding: '1rem 0', fontFamily: 'monospace' }}>
+          <div style={{ 
+            background: '#1e293b', 
+            color: '#38bdf8', 
+            padding: '1.25rem', 
+            borderRadius: '8px', 
+            border: '1px solid #38bdf8',
+            position: 'relative'
+          }}>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8', borderBottom: '1px solid #334155', paddingBottom: '0.5rem', marginBottom: '0.75rem' }}>
+              📱 To: {emergencyPhone} | Via Tripzy Safety Server
+            </div>
+            <p style={{ fontSize: '0.9rem', margin: 0, lineHeight: '1.5' }}>
+              Hey, I am on a Tripzy ride. Here are my details:
+              <br />
+              • Driver: {ride?.driver_name || 'Driver'}
+              {ride?.vehicle_number && <><br />• Vehicle No: {ride.vehicle_number}</>}
+              <br />
+              • Live Tracking Link: http://localhost:3000/tracking/{rideId}
+            </p>
+          </div>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '1.25rem', textAlign: 'center' }}>
+            In production, this message is sent via Twilio SMS gateway.
+          </p>
+          <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
+            <Button variant="outline" onClick={() => setShowSmsModal(false)}>Close</Button>
           </div>
         </div>
       </Modal>

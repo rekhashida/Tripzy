@@ -94,6 +94,50 @@ export default function RideBooking() {
     }
   };
 
+  const getAiPriceInsight = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    const minutes = now.getMinutes();
+    const timeInHours = hour + minutes / 60;
+
+    const morningPeakStart = 8.5;
+    const morningPeakEnd = 10.0;
+    const eveningPeakStart = 18.0;
+    const eveningPeakEnd = 20.5;
+
+    const isMorningPeak = timeInHours >= morningPeakStart && timeInHours <= morningPeakEnd;
+    const isEveningPeak = timeInHours >= eveningPeakStart && timeInHours <= eveningPeakEnd;
+    const isPeakActive = isMorningPeak || isEveningPeak;
+
+    if (isPeakActive) {
+      let remainingMin = 0;
+      if (isMorningPeak) {
+        remainingMin = Math.round((morningPeakEnd - timeInHours) * 60);
+      } else {
+        remainingMin = Math.round((eveningPeakEnd - timeInHours) * 60);
+      }
+      return {
+        isPeak: true,
+        text: `🔥 AI Price Insight: Fares are currently 1.5x higher due to Peak Hours. Demand is expected to return to normal in approximately ${remainingMin} minutes. If your travel is not urgent, consider waiting to save on fare!`
+      };
+    } else {
+      let nextPeakMsg = '';
+      if (timeInHours < morningPeakStart) {
+        const diffMin = Math.round((morningPeakStart - timeInHours) * 60);
+        nextPeakMsg = `Morning Peak starts in ${diffMin} minutes (8:30 AM)`;
+      } else if (timeInHours < eveningPeakStart) {
+        const diffMin = Math.round((eveningPeakStart - timeInHours) * 60);
+        nextPeakMsg = `Evening Peak starts in ${diffMin} minutes (6:00 PM)`;
+      } else {
+        nextPeakMsg = `Morning Peak starts at 8:30 AM tomorrow`;
+      }
+      return {
+        isPeak: false,
+        text: `💡 AI Price Insight: Demand is currently low. Book your ride now to take advantage of standard fares before the next surge (${nextPeakMsg})!`
+      };
+    }
+  };
+
   const handleMapClick = (e) => {
     if (e.latLng) {
       const lat = e.latLng.lat();
@@ -266,6 +310,20 @@ export default function RideBooking() {
               </div>
             </Card>
 
+            <Card style={{
+              background: 'var(--bg-tertiary)',
+              border: '1px dashed var(--border-color)',
+              marginBottom: '1.5rem',
+              padding: '1rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '1.5rem' }}>🧠</span>
+                <div style={{ fontSize: '0.85rem', lineHeight: '1.4', color: 'var(--text-muted)' }}>
+                  {getAiPriceInsight().text}
+                </div>
+              </div>
+            </Card>
+
             {surgeInfo && surgeInfo.surge > 1 && (
               <Card style={{ 
                 background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(249, 115, 22, 0.15))',
@@ -313,6 +371,30 @@ export default function RideBooking() {
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Multiplier: {(surgeInfo.luggageMultiplier).toFixed(1)}x</div>
                     <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'rgba(59, 130, 246, 0.9)' }}>
                       +₹{(fare - Math.round(surgeInfo.surge * surgeInfo.subtotal))}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {(vehicleType === 'bike' || vehicleType === 'auto') && distance && (
+              <Card style={{ 
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15))',
+                border: '2px solid rgba(16, 185, 129, 0.5)',
+                marginBottom: '1.5rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <span style={{ fontSize: '2rem' }}>🌿</span>
+                  <div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#10b981', marginBottom: '0.25rem' }}>
+                      ECO-FRIENDLY CHOICE
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                      By choosing a {vehicleType === 'bike' ? 'Bike' : 'Auto Rickshaw'}, you will save approximately{' '}
+                      <strong>
+                        {(distance * (vehicleType === 'bike' ? 0.12 : 0.08)).toFixed(2)} kg
+                      </strong>{' '}
+                      of CO₂ emissions compared to an SUV!
                     </div>
                   </div>
                 </div>

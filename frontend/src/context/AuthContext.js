@@ -35,6 +35,35 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  const fetchProfile = async () => {
+    try {
+      const { data } = await api.get('/auth/profile');
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+      return data.user;
+    } catch (e) {
+      console.error('Failed to fetch profile', e);
+    }
+  };
+
+  const loginWithGoogle = async (email, name) => {
+    const { data } = await api.post('/auth/google', { email, name });
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+    setUser(data.user);
+    return data;
+  };
+
+  const loginWithOtp = async (phone, otp) => {
+    const { data } = await api.post('/auth/verify-otp', { phone, otp });
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+    setUser(data.user);
+    return data;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -45,7 +74,7 @@ export function AuthProvider({ children }) {
   if (loading) return <div className="app">Loading...</div>;
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, register, logout, fetchProfile, loginWithGoogle, loginWithOtp }}>
       {children}
     </AuthContext.Provider>
   );

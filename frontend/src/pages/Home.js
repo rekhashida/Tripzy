@@ -9,7 +9,8 @@ import {
   FiZap, 
   FiShield,
   FiTrendingUp,
-  FiClock
+  FiClock,
+  FiUser
 } from 'react-icons/fi';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -50,34 +51,97 @@ export default function Home() {
     }
   ];
 
+  const driverFeatures = [
+    {
+      icon: <FiZap />,
+      title: 'Smart Matching',
+      description: 'Get matched with passengers within a 2km radius instantly. Maximize your driving time and reduce idle waits.'
+    },
+    {
+      icon: <FiTrendingUp />,
+      title: 'Surge Earnings',
+      description: 'Earn more during peak hours (morning & evening) and late nights with dynamic request-based multipliers.'
+    },
+    {
+      icon: <FiShield />,
+      title: 'Secure OTP Handover',
+      description: 'Ensure safe trips with mandatory OTP verification at both passenger pickup and drop-off points.'
+    },
+    {
+      icon: <FiClock />,
+      title: 'Flexible Hours',
+      description: 'You are in control. Go online or offline whenever you want and manage your own schedule.'
+    },
+    {
+      icon: <FiUsers />,
+      title: 'Ride Pooling',
+      description: 'Accept pooling rides to carry multiple passengers heading in the same direction, boosting your fuel efficiency.'
+    },
+    {
+      icon: <FiPackage />,
+      title: 'Parcel Deliveries',
+      description: 'Accept couriers and package deliveries alongside rides to expand your earnings variety.'
+    }
+  ];
+
+  const isDriver = user && user.role === 'driver';
+
   return (
     <>
-      <div className="hero">
+      <div className="hero" style={{
+        background: isDriver ? 'linear-gradient(135deg, #1e1b4b, #311042)' : 'linear-gradient(135deg, var(--bg-tertiary), #1e1e38)'
+      }}>
         <div className="hero-content">
-          <h1>Your Journey, Our Priority</h1>
-          <p>
-            Experience seamless ride booking, reliable parcel delivery, and smart ride pooling — 
-            all in one beautiful, modern platform. Book your next trip with confidence.
-          </p>
+          {isDriver ? (
+            <>
+              <h1>Drive with Tripzy, Earn on Your Terms</h1>
+              <p>
+                Welcome back, {user.name}! Ready to hit the road? Access your personal dashboard to go online, accept new rides, track your earnings, and view your stats.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1>Your Journey, Our Priority</h1>
+              <p>
+                Experience seamless ride booking, reliable parcel delivery, and smart ride pooling — 
+                all in one beautiful, modern platform. Book your next trip with confidence.
+              </p>
+            </>
+          )}
           <div className="hero-cta">
             {user ? (
-              <>
-                <Link to="/ride">
-                  <Button variant="primary" size="large">
-                    <FiNavigation /> Book a Ride
-                  </Button>
-                </Link>
-                <Link to="/parcel">
-                  <Button variant="secondary" size="large">
-                    <FiPackage /> Send Parcel
-                  </Button>
-                </Link>
-                <Link to="/pooling">
-                  <Button variant="primary" size="large">
-                    <FiUsers /> Join Pooling
-                  </Button>
-                </Link>
-              </>
+              isDriver ? (
+                <>
+                  <Link to="/driver">
+                    <Button variant="primary" size="large">
+                      <FiNavigation /> Driver Dashboard
+                    </Button>
+                  </Link>
+                  <Link to="/my-rides">
+                    <Button variant="outline" size="large">
+                      <FiClock /> Trip History
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/ride">
+                    <Button variant="primary" size="large">
+                      <FiNavigation /> Book a Ride
+                    </Button>
+                  </Link>
+                  <Link to="/parcel">
+                    <Button variant="secondary" size="large">
+                      <FiPackage /> Send Parcel
+                    </Button>
+                  </Link>
+                  <Link to="/pooling">
+                    <Button variant="primary" size="large">
+                      <FiUsers /> Join Pooling
+                    </Button>
+                  </Link>
+                </>
+              )
             ) : (
               <>
                 <Link to="/register">
@@ -96,9 +160,12 @@ export default function Home() {
         </div>
       </div>
 
-      <Card title="What We Offer" subtitle="Everything you need for your transportation and delivery needs">
+      <Card 
+        title={isDriver ? "Driver Benefits & Tools" : "What We Offer"} 
+        subtitle={isDriver ? "Everything you need to succeed as a Tripzy partner" : "Everything you need for your transportation and delivery needs"}
+      >
         <div className="features">
-          {features.map((feature, index) => (
+          {(isDriver ? driverFeatures : features).map((feature, index) => (
             <div key={index} className="feature-card">
               <div className="feature-icon">{feature.icon}</div>
               <h3 className="feature-title">{feature.title}</h3>
@@ -113,7 +180,7 @@ export default function Home() {
           <div className="text-center">
             <h2 style={{ marginBottom: '1rem' }}>Ready to Get Started?</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-              Join thousands of satisfied customers who trust Tripzy for their transportation needs.
+              Join thousands of satisfied customers and drivers who trust Tripzy every single day.
             </p>
             <Link to="/register">
               <Button variant="primary" size="large">
