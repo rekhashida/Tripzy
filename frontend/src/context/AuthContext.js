@@ -46,8 +46,8 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const loginWithGoogle = async (email, name) => {
-    const { data } = await api.post('/auth/google', { email, name });
+  const loginWithGoogle = async (token) => {
+    const { data } = await api.post('/auth/google', { token });
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;

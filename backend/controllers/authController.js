@@ -75,9 +75,28 @@ const getProfile = async (req, res) => {
 
 const googleLogin = async (req, res) => {
   try {
-    const { email, name } = req.body;
-    if (!email || !name) {
-      return res.status(400).json({ error: 'Email and Name are required.' });
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ error: 'Google ID Token is required.' });
+    }
+
+    // Verify token using Google's tokeninfo API
+    const googleRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${token}`);
+    if (!googleRes.ok) {
+      return res.status(400).json({ error: 'Invalid Google token.' });
+    }
+
+    const googlePayload = await googleRes.json();
+    const { email, name, email_verified } = googlePayload;
+
+    if (!email_verified) {
+      return res.status(400).json({ error: 'Google email address is not verified.' });
+    }
+
+    // Verify aud field matches our client ID
+    const expectedClientId = process.env.GOOGLE_CLIENT_ID || '928961312935-nqqsqa4c9f0nsdeiouv09l74hud0eukl.apps.googleusercontent.com';
+    if (googlePayload.aud !== expectedClientId) {
+      return res.status(400).json({ error: 'Unauthorized Google Client ID.' });
     }
 
     // Check if user exists
@@ -86,7 +105,7 @@ const googleLogin = async (req, res) => {
 
     if (rows.length > 0) {
       user = rows[0];
-      // If user exists as a 'user' but clicked a Driver mock account, promote them
+      // If user exists as a 'user' but clicked a Driver account, promote them
       const targetRole = (email.toLowerCase().includes('driver') || name.toLowerCase().includes('driver')) ? 'driver' : user.role;
       if (user.role !== 'driver' && targetRole === 'driver') {
         await pool.query('UPDATE users SET role = ? WHERE id = ?', ['driver', user.id]);
@@ -121,13 +140,13 @@ const googleLogin = async (req, res) => {
       user = newRows[0];
     }
 
-    const token = jwt.sign(
+    const jwtToken = jwt.sign(
       { userId: user.id },
       process.env.JWT_SECRET || 'tripzy_secret',
       { expiresIn: '7d' }
     );
     delete user.password;
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, wallet_balance: user.wallet_balance } });
+    res.json({ token: jwtToken, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, wallet_balance: user.wallet_balance } });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
