@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
+const { sendSMS } = require('../services/smsService');
 
 const register = async (req, res) => {
   try {
@@ -177,7 +178,17 @@ const sendMobileOtp = async (req, res) => {
       [phone, otp, 'login', expiresAt]
     );
 
-    res.json({ message: 'OTP sent successfully.', otp }); // Return OTP in response for demo purposes
+    // Send SMS via Twilio or Fast2SMS gateway
+    const message = `Your Tripzy verification code is ${otp}. Valid for 5 minutes.`;
+    const smsSent = await sendSMS(phone, message, otp);
+
+    const responsePayload = { message: 'OTP sent successfully.' };
+    if (!smsSent) {
+      // For local development/demo purposes when no SMS API key is configured
+      responsePayload.otp = otp;
+      responsePayload.simulated = true;
+    }
+    res.json(responsePayload);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

@@ -141,10 +141,16 @@ export default function Login() {
           </div>
         )}
 
-        {receivedOtp && (
-          <div className="alert alert-info" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--primary)' }}>
-            💬 <strong>Simulated SMS Received:</strong> Your Tripzy Login OTP is <strong>{receivedOtp}</strong> (valid for 5 mins).
-          </div>
+        {otpSent && (
+          receivedOtp ? (
+            <div className="alert alert-info" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--primary)' }}>
+              💬 <strong>Simulated SMS Received:</strong> Your Tripzy Login OTP is <strong>{receivedOtp}</strong> (valid for 5 mins).
+            </div>
+          ) : (
+            <div className="alert alert-success" style={{ marginBottom: '1.5rem', borderLeft: '4px solid #10b981' }}>
+              📩 <strong>Verification Code Sent:</strong> A 6-digit OTP has been sent to your mobile device. Please check your SMS.
+            </div>
+          )
         )}
 
         {loginMode === 'email' ? (
