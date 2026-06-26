@@ -11,13 +11,18 @@ async function sendSMS(to, body, otp) {
     FAST2SMS_API_KEY
   } = process.env;
 
+  let formattedTo = to.trim().replace(/\s+/g, '');
+  if (!formattedTo.startsWith('+')) {
+    formattedTo = '+91' + formattedTo;
+  }
+
   // 1. Try Twilio Gateway
   if (TWILIO_SID && TWILIO_AUTH_TOKEN && TWILIO_PHONE) {
     try {
-      console.log(`[SMS Service] Dispatching via Twilio to ${to}...`);
+      console.log(`[SMS Service] Dispatching via Twilio to ${formattedTo}...`);
       const auth = Buffer.from(`${TWILIO_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64');
       const params = new URLSearchParams();
-      params.append('To', to);
+      params.append('To', formattedTo);
       params.append('From', TWILIO_PHONE);
       params.append('Body', body);
 
@@ -67,8 +72,8 @@ async function sendSMS(to, body, otp) {
     }
   }
 
-  console.log(`[SMS Service] No active SMS gateway credentials. Falling back to console simulation.`);
-  console.log(`💬 SIMULATED SMS to ${to}: ${body}`);
+  console.log(`[SMS Service] No active SMS gateway credentials or delivery failed. Falling back to console simulation.`);
+  console.log(`💬 SIMULATED SMS to ${formattedTo}: ${body}`);
   return false;
 }
 
