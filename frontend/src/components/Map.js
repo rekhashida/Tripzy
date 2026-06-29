@@ -1,12 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 /**
  * Leaflet.js Interactive Map Component
  * Works without Google Maps API and is 100% free.
- * Supports Street, Satellite, and Dark Mode layers.
+ * Supports Street, Hybrid, Terrain, Globe views, 3D Cockpit mode, and Simulated Traffic segments.
  */
 export default function Map({ center, zoom = 14, markers = [], path = [], height = 400, onMapClick }) {
   const ref = useRef(null);
+  const [is3D, setIs3D] = useState(false);
 
   /* global L */
   useEffect(() => {
@@ -23,30 +24,44 @@ export default function Map({ center, zoom = 14, markers = [], path = [], height
       // Initialize Leaflet map instance
       map = L.map(ref.current).setView([center.lat, center.lng], zoom);
 
-      // Define map layer options (100% free tiles)
+      // 1. Street View (Default)
       const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap contributors'
       });
 
-      const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+      // 2. Hybrid View (Esri Satellite + CartoDB Road Labels)
+      const satelliteTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri'
       });
-
-      const darkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap contributors © CARTO',
+      const labelTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
         subdomains: 'abcd',
         maxZoom: 20
       });
+      const hybridMap = L.layerGroup([satelliteTiles, labelTiles]);
 
-      // Default map display layer (Dark Mode to match Tripzy UI theme)
-      darkMap.addTo(map);
+      // 3. Terrain View (OpenTopoMap contour elevations)
+      const terrainMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        attribution: '© OpenTopoMap contributors'
+      });
 
-      // Add switcher control in top-right corner
+      // 4. Globe View (Zoomed-out World Satellite View)
+      const globeMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        minZoom: 1,
+        maxZoom: 6,
+        attribution: 'Tiles © Esri'
+      });
+
+      // Default to Street View map display
+      streetMap.addTo(map);
+
+      // Register layers in Leaflet Switcher Widget
       const baseMaps = {
-        "Dark Mode": darkMap,
-        "Normal (Street)": streetMap,
-        "Satellite": satelliteMap
+        "Street View (Default)": streetMap,
+        "Hybrid View": hybridMap,
+        "Terrain View": terrainMap,
+        "Globe View": globeMap
       };
       L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
 
@@ -72,17 +87,32 @@ export default function Map({ center, zoom = 14, markers = [], path = [], height
         }
       });
 
-      // Render path polyline route
+      // Render path polyline route with simulated traffic flow
       if (path && path.length > 1) {
-        const latLngs = path.map((p) => [p.lat, p.lng]);
-        const polyline = L.polyline(latLngs, {
-          color: '#6366f1',
-          weight: 4,
-          opacity: 0.8
-        }).addTo(map);
+        // Draw segmented polyline to represent live traffic flow
+        for (let i = 0; i < path.length - 1; i++) {
+          const start = [path[i].lat, path[i].lng];
+          const end = [path[i + 1].lat, path[i + 1].lng];
 
-        // Auto zoom and fit path bounds
-        map.fitBounds(polyline.getBounds());
+          // Simulate congestion level on segment: Green (70%), Orange (20%), Red (10%)
+          const randomVal = (i * 17 + 23) % 100; // Deterministic random pattern per segment index
+          let trafficColor = '#10b981'; // Green (Smooth)
+          if (randomVal > 90) {
+            trafficColor = '#ef4444'; // Red (Heavy traffic)
+          } else if (randomVal > 70) {
+            trafficColor = '#f59e0b'; // Orange (Medium slowdown)
+          }
+
+          L.polyline([start, end], {
+            color: trafficColor,
+            weight: 5,
+            opacity: 0.85
+          }).addTo(map);
+        }
+
+        // Auto zoom and fit overall path bounds
+        const overallPolyline = L.polyline(path.map((p) => [p.lat, p.lng]));
+        map.fitBounds(overallPolyline.getBounds());
       }
 
       // Handle map clicks
@@ -122,7 +152,52 @@ export default function Map({ center, zoom = 14, markers = [], path = [], height
     );
   }
 
-  return <div className="map-container" style={{ height, borderRadius: '8px', border: '1px solid var(--border-color, #2f2f3f)' }} ref={ref} />;
+  return (
+    <div style={{ position: 'relative' }}>
+      <div 
+        className={`map-container ${is3D ? 'td-mode' : ''}`} 
+        style={{ 
+          height, 
+          borderRadius: '8px', 
+          border: '1px solid var(--border-color, #2f2f3f)',
+          transition: 'transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s'
+        }} 
+        ref={ref} 
+      />
+      {/* 3D Nav Perspective Button */}
+      <button
+        onClick={() => setIs3D(!is3D)}
+        style={{
+          position: 'absolute',
+          bottom: '20px',
+          right: '20px',
+          zIndex: 1000,
+          background: 'var(--bg-tertiary, #1f1f2e)',
+          border: '1px solid var(--border-color, #2f2f3f)',
+          color: 'var(--text-primary, #ffffff)',
+          padding: '0.5rem 0.75rem',
+          borderRadius: '6px',
+          fontSize: '0.8rem',
+          fontWeight: 600,
+          cursor: 'pointer',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.25rem'
+        }}
+      >
+        {is3D ? '2D View 🗺️' : '3D Nav 🚀'}
+      </button>
+
+      {/* Inject 3D perspective styles */}
+      <style>{`
+        .map-container.td-mode {
+          transform: perspective(1000px) rotateX(45deg) scale(0.92);
+          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+        }
+      `}</style>
+    </div>
+  );
 }
 
 /**
@@ -130,7 +205,7 @@ export default function Map({ center, zoom = 14, markers = [], path = [], height
  * Free, fast, and does not require an API key.
  * Biased to India and features self-healing junction/circle fallbacks.
  */
-export function MapAutocomplete({ onPlaceSelected, value = '', placeholder = 'Search or enter address...', className = '' }) {
+export function MapAutocomplete({ onPlaceSelected, onFocus, value = '', placeholder = 'Search or enter address...', className = '' }) {
   const [address, setAddress] = React.useState(value);
   const [suggestions, setSuggestions] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -248,6 +323,7 @@ export function MapAutocomplete({ onPlaceSelected, value = '', placeholder = 'Se
             setAddress(e.target.value);
             setIsOpen(true);
           }}
+          onFocus={onFocus}
           style={{ width: '100%' }}
         />
         {loading && (

@@ -17,6 +17,7 @@ export default function ParcelDelivery() {
   const [msg, setMsg] = useState('');
   const [msgType, setMsgType] = useState('info');
   const [loading, setLoading] = useState(false);
+  const [clickTarget, setClickTarget] = useState('pickup');
   const navigate = useNavigate();
 
   const create = async () => {
@@ -58,14 +59,29 @@ export default function ParcelDelivery() {
     }
   };
 
-  const handleMapClick = (e) => {
+  const handleMapClick = async (e) => {
     if (e.latLng) {
       const lat = e.latLng.lat();
       const lng = e.latLng.lng();
-      if (!pickup.lat || !pickup.lng) {
-        setPickup({ ...pickup, lat, lng });
-      } else if (!drop.lat || !drop.lng) {
-        setDrop({ ...drop, lat, lng });
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+        if (res.ok) {
+          const data = await res.json();
+          const address = data.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+          if (clickTarget === 'pickup') {
+            setPickup({ address, lat, lng });
+          } else {
+            setDrop({ address, lat, lng });
+          }
+        }
+      } catch (err) {
+        console.error('Reverse geocode error:', err);
+        const address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        if (clickTarget === 'pickup') {
+          setPickup({ address, lat, lng });
+        } else {
+          setDrop({ address, lat, lng });
+        }
       }
     }
   };
@@ -102,7 +118,9 @@ export default function ParcelDelivery() {
             </label>
             <MapAutocomplete
               onPlaceSelected={(place) => setPickup(place)}
+              onFocus={() => setClickTarget('pickup')}
               placeholder="Search pickup location..."
+              value={pickup.address}
             />
             {pickup.lat && (
               <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
@@ -118,7 +136,9 @@ export default function ParcelDelivery() {
             </label>
             <MapAutocomplete
               onPlaceSelected={(place) => setDrop(place)}
+              onFocus={() => setClickTarget('drop')}
               placeholder="Search delivery location..."
+              value={drop.address}
             />
             {drop.lat && (
               <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>

@@ -25,6 +25,7 @@ export default function RideBooking() {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [rideOtp, setRideOtp] = useState({ rideId: null, pickup_otp: null, drop_otp: null });
   const [surgeInfo, setSurgeInfo] = useState(null);
+  const [clickTarget, setClickTarget] = useState('pickup');
   const navigate = useNavigate();
 
   const estimate = async () => {
@@ -138,15 +139,29 @@ export default function RideBooking() {
     }
   };
 
-  const handleMapClick = (e) => {
+  const handleMapClick = async (e) => {
     if (e.latLng) {
       const lat = e.latLng.lat();
       const lng = e.latLng.lng();
-      // You can reverse geocode here to get address
-      if (!pickup.lat || !pickup.lng) {
-        setPickup({ ...pickup, lat, lng });
-      } else if (!drop.lat || !drop.lng) {
-        setDrop({ ...drop, lat, lng });
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+        if (res.ok) {
+          const data = await res.json();
+          const address = data.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+          if (clickTarget === 'pickup') {
+            setPickup({ address, lat, lng });
+          } else {
+            setDrop({ address, lat, lng });
+          }
+        }
+      } catch (err) {
+        console.error('Reverse geocode error:', err);
+        const address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        if (clickTarget === 'pickup') {
+          setPickup({ address, lat, lng });
+        } else {
+          setDrop({ address, lat, lng });
+        }
       }
     }
   };
@@ -183,7 +198,9 @@ export default function RideBooking() {
             </label>
             <MapAutocomplete
               onPlaceSelected={(place) => setPickup(place)}
+              onFocus={() => setClickTarget('pickup')}
               placeholder="Search pickup location..."
+              value={pickup.address}
             />
             {pickup.lat && (
               <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
@@ -199,7 +216,9 @@ export default function RideBooking() {
             </label>
             <MapAutocomplete
               onPlaceSelected={(place) => setDrop(place)}
+              onFocus={() => setClickTarget('drop')}
               placeholder="Search drop location..."
+              value={drop.address}
             />
             {drop.lat && (
               <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
