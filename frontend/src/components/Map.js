@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 /**
  * Leaflet.js Interactive Map Component
  * Works without Google Maps API and is 100% free.
+ * Supports Street, Satellite, and Dark Mode layers.
  */
 export default function Map({ center, zoom = 14, markers = [], path = [], height = 400, onMapClick }) {
   const ref = useRef(null);
@@ -19,14 +20,35 @@ export default function Map({ center, zoom = 14, markers = [], path = [], height
 
     let map;
     try {
-      // Initialize Leaflet map
+      // Initialize Leaflet map instance
       map = L.map(ref.current).setView([center.lat, center.lng], zoom);
 
-      // Bind OpenStreetMap free tile layers
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      // Define map layer options (100% free tiles)
+      const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
+      });
+
+      const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+      });
+
+      const darkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
+      });
+
+      // Default map display layer (Dark Mode to match Tripzy UI theme)
+      darkMap.addTo(map);
+
+      // Add switcher control in top-right corner
+      const baseMaps = {
+        "Dark Mode": darkMap,
+        "Normal (Street)": streetMap,
+        "Satellite": satelliteMap
+      };
+      L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
 
       // Render custom SVG markers
       (markers || []).forEach((m) => {
@@ -106,6 +128,7 @@ export default function Map({ center, zoom = 14, markers = [], path = [], height
 /**
  * Address Autocomplete using OpenStreetMap Nominatim Geocoding API.
  * Free, fast, and does not require an API key.
+ * Biased to India and features self-healing junction/circle fallbacks.
  */
 export function MapAutocomplete({ onPlaceSelected, placeholder = 'Search or enter address...', className = '' }) {
   const [address, setAddress] = React.useState('');
@@ -135,11 +158,49 @@ export function MapAutocomplete({ onPlaceSelected, placeholder = 'Search or ente
     const delayDebounceFn = setTimeout(async () => {
       setLoading(true);
       try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=5&addressdetails=1`
-        );
+        // Bias to India by setting countrycodes=in
+        let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=5&addressdetails=1&countrycodes=in`;
+        
+        let response = await fetch(url);
         if (response.ok) {
-          const data = await response.json();
+          let data = await response.json();
+          
+          // Detect Indian localized junction words
+          const lowerAddress = address.toLowerCase();
+          const hasJunctionKeyword = lowerAddress.includes('circle') || lowerAddress.includes('chowkdi') || lowerAddress.includes('chokdi') || lowerAddress.includes('crossroad');
+          
+          // Self-healing fallback: If search is empty, translate localized names (e.g. circle -> char rasta)
+          if (data.length === 0 && hasJunctionKeyword) {
+            const fallbackQuery = address
+              .replace(/circle/gi, 'char rasta')
+              .replace(/chowkdi/gi, 'char rasta')
+              .replace(/chokdi/gi, 'char rasta')
+              .replace(/crossroad[s]?/gi, 'char rasta');
+              
+            let fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackQuery)}&limit=5&addressdetails=1&countrycodes=in`;
+            let fallbackResponse = await fetch(fallbackUrl);
+            
+            if (fallbackResponse.ok) {
+              const fallbackData = await fallbackResponse.json();
+              if (fallbackData && fallbackData.length > 0) {
+                data = fallbackData;
+              } else {
+                // If "char rasta" also fails, strip junction keyword completely to find the general neighborhood
+                const strippedQuery = address
+                  .replace(/circle/gi, '')
+                  .replace(/chowkdi/gi, '')
+                  .replace(/chokdi/gi, '')
+                  .replace(/crossroad[s]?/gi, '');
+                  
+                let strippedUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(strippedQuery)}&limit=5&addressdetails=1&countrycodes=in`;
+                let strippedResponse = await fetch(strippedUrl);
+                if (strippedResponse.ok) {
+                  data = await strippedResponse.json();
+                }
+              }
+            }
+          }
+          
           setSuggestions(data);
           setIsOpen(true);
         }
@@ -148,7 +209,7 @@ export function MapAutocomplete({ onPlaceSelected, placeholder = 'Search or ente
       } finally {
         setLoading(false);
       }
-    }, 450); // 450ms debounce
+    }, 450); // 450ms debounce to prevent API rate limits
 
     return () => clearTimeout(delayDebounceFn);
   }, [address]);
