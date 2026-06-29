@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { 
   FiHome, 
   FiNavigation, 
@@ -21,6 +22,7 @@ import api from '../services/api';
 
 export default function Nav() {
   const { user, logout, fetchProfile } = useAuth();
+  const { lang, changeLanguage, t } = useLanguage();
   const navigate = useNavigate();
 
   const [showTopupModal, setShowTopupModal] = useState(false);
@@ -71,13 +73,13 @@ export default function Nav() {
         {user && user.role === 'driver' && (
           <div className="nav-links">
             <NavLink to="/driver" className={({ isActive }) => isActive ? 'active' : ''}>
-              <FiTruck /> Dashboard
+              <FiTruck /> {t('dashboard')}
             </NavLink>
             <NavLink to="/my-rides" className={({ isActive }) => isActive ? 'active' : ''}>
-              <FiMap /> Job History
+              <FiMap /> {t('job_history')}
             </NavLink>
             <NavLink to="/my-parcels" className={({ isActive }) => isActive ? 'active' : ''}>
-              <FiPackage /> Deliveries
+              <FiPackage /> {t('deliveries')}
             </NavLink>
           </div>
         )}
@@ -85,16 +87,16 @@ export default function Nav() {
         {user && user.role !== 'driver' && (
           <div className="nav-links">
             <NavLink to="/ride" className={({ isActive }) => isActive ? 'active' : ''}>
-              <FiNavigation /> Ride
+              <FiNavigation /> {t('book_ride')}
             </NavLink>
             <NavLink to="/parcel" className={({ isActive }) => isActive ? 'active' : ''}>
-              <FiPackage /> Parcel
+              <FiPackage /> {t('parcel_delivery')}
             </NavLink>
             <NavLink to="/pooling" className={({ isActive }) => isActive ? 'active' : ''}>
-              <FiUsers /> Pooling
+              <FiUsers /> {t('ride_pooling')}
             </NavLink>
             <NavLink to="/voice" className={({ isActive }) => isActive ? 'active' : ''}>
-              <FiMic /> Voice
+              <FiMic /> {t('voice_booking')}
             </NavLink>
           </div>
         )}
@@ -132,31 +134,53 @@ export default function Nav() {
               {user.role !== 'driver' && (
                 <>
                   <NavLink to="/my-rides" className={({ isActive }) => isActive ? 'active' : ''}>
-                    <FiMap /> My Rides
+                    <FiMap /> {t('my_rides')}
                   </NavLink>
                   <NavLink to="/my-parcels" className={({ isActive }) => isActive ? 'active' : ''}>
-                    <FiTruck /> My Parcels
+                    <FiTruck /> {t('my_parcels')}
                   </NavLink>
                 </>
               )}
               {user.role === 'admin' && (
                 <NavLink to="/admin" className={({ isActive }) => isActive ? 'active' : ''}>
-                  <FiShield /> Admin
+                  <FiShield /> {t('admin')}
                 </NavLink>
               )}
               <div className="username">
                 <FiUser /> {user.name}
               </div>
               <button className="btn btn-outline" onClick={handleLogout}>
-                <FiLogOut /> Logout
+                <FiLogOut /> {t('logout')}
               </button>
             </>
           ) : (
             <>
-              <NavLink to="/login" className={({ isActive }) => isActive ? 'active' : ''}>Login</NavLink>
-              <NavLink to="/register" className={({ isActive }) => (isActive ? 'active ' : '') + 'btn btn-primary'}>Register</NavLink>
+              <NavLink to="/login" className={({ isActive }) => isActive ? 'active' : ''}>{t('login')}</NavLink>
+              <NavLink to="/register" className={({ isActive }) => (isActive ? 'active ' : '') + 'btn btn-primary'}>{t('register')}</NavLink>
             </>
           )}
+
+          {/* Language Selector Dropdown */}
+          <select 
+            value={lang} 
+            onChange={(e) => changeLanguage(e.target.value)}
+            style={{
+              background: 'var(--bg-tertiary, #1f1f2e)',
+              color: 'var(--text-primary, #ffffff)',
+              border: '1px solid var(--border-color, #2f2f3f)',
+              padding: '0.3rem 0.6rem',
+              borderRadius: '6px',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              outline: 'none',
+              marginLeft: '0.75rem',
+              fontWeight: 500
+            }}
+          >
+            <option value="en">English 🇬🇧</option>
+            <option value="hi">हिन्दी 🇮🇳</option>
+            <option value="gu">ગુજરાતી 🇮🇳</option>
+          </select>
         </div>
       </nav>
 

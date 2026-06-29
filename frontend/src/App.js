@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import Nav from './components/Nav';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -30,28 +31,30 @@ function RoleRoute({ children, roles }) {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Nav />
-        <div className="app">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/ride" element={<PrivateRoute><RideBooking /></PrivateRoute>} />
-            <Route path="/parcel" element={<PrivateRoute><ParcelDelivery /></PrivateRoute>} />
-            <Route path="/voice" element={<PrivateRoute><VoiceBooking /></PrivateRoute>} />
-            <Route path="/pooling" element={<PrivateRoute><RidePooling /></PrivateRoute>} />
-            <Route path="/tracking/:rideId" element={<PrivateRoute><RealTimeTracking /></PrivateRoute>} />
-            <Route path="/my-rides" element={<PrivateRoute><MyRides /></PrivateRoute>} />
-            <Route path="/my-parcels" element={<PrivateRoute><MyParcels /></PrivateRoute>} />
-            <Route path="/admin" element={<RoleRoute roles={["admin"]}><AdminDashboard /></RoleRoute>} />
-            <Route path="/driver" element={<RoleRoute roles={["driver"]}><DriverDashboard /></RoleRoute>} />
-          </Routes>
-        </div>
-        <SupportChatbot />
-      </BrowserRouter>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Nav />
+          <div className="app">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/ride" element={<PrivateRoute><RideBooking /></PrivateRoute>} />
+              <Route path="/parcel" element={<PrivateRoute><ParcelDelivery /></PrivateRoute>} />
+              <Route path="/voice" element={<PrivateRoute><VoiceBooking /></PrivateRoute>} />
+              <Route path="/pooling" element={<PrivateRoute><RidePooling /></PrivateRoute>} />
+              <Route path="/tracking/:rideId" element={<PrivateRoute><RealTimeTracking /></PrivateRoute>} />
+              <Route path="/my-rides" element={<PrivateRoute><MyRides /></PrivateRoute>} />
+              <Route path="/my-parcels" element={<PrivateRoute><MyParcels /></PrivateRoute>} />
+              <Route path="/admin" element={<RoleRoute roles={["admin"]}><AdminDashboard /></RoleRoute>} />
+              <Route path="/driver" element={<RoleRoute roles={["driver"]}><DriverDashboard /></RoleRoute>} />
+            </Routes>
+          </div>
+          <SupportChatbot />
+        </BrowserRouter>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

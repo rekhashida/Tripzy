@@ -3,7 +3,7 @@ const pool = require('../config/db');
 const getRideForTracking = async (req, res) => {
   try {
     const [ride] = await pool.query(
-      'SELECT r.*, d.vehicle_number, d.rating as driver_rating, u.name as driver_name, u.phone as driver_phone FROM rides r LEFT JOIN drivers d ON r.driver_id = d.id LEFT JOIN users u ON d.user_id = u.id WHERE r.id = ?',
+      'SELECT r.*, d.vehicle_number, d.license_number, d.rating as driver_rating, u.name as driver_name, u.phone as driver_phone FROM rides r LEFT JOIN drivers d ON r.driver_id = d.id LEFT JOIN users u ON d.user_id = u.id WHERE r.id = ?',
       [req.params.rideId]
     );
     if (!ride.length) return res.status(404).json({ error: 'Ride not found.' });

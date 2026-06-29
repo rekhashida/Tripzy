@@ -24,6 +24,19 @@ export default function RealTimeTracking() {
   const [eta, setEta] = useState(null);
   const [emergencyPhone, setEmergencyPhone] = useState('');
   const [showSmsModal, setShowSmsModal] = useState(false);
+  const [userCoords, setUserCoords] = useState(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        (err) => console.warn('Geolocation error:', err),
+        { enableHighAccuracy: true }
+      );
+    }
+  }, []);
 
   useEffect(() => {
     loadRide();
@@ -367,10 +380,19 @@ export default function RealTimeTracking() {
             <p style={{ fontSize: '0.9rem', margin: 0, lineHeight: '1.5' }}>
               Hey, I am on a Tripzy ride. Here are my details:
               <br />
-              • Driver: {ride?.driver_name || 'Driver'}
-              {ride?.vehicle_number && <><br />• Vehicle No: {ride.vehicle_number}</>}
+              • 👤 Driver Name: {ride?.driver_name || 'N/A'}
               <br />
-              • Live Tracking Link: http://localhost:3000/tracking/{rideId}
+              • 📞 Driver Phone: {ride?.driver_phone || 'N/A'}
+              <br />
+              • 🚗 Vehicle Type: {ride?.vehicle_type ? ride.vehicle_type.toUpperCase() : 'N/A'}
+              <br />
+              • 🔢 Vehicle Plate: {ride?.vehicle_number || 'N/A'}
+              <br />
+              • 🔑 License Number: {ride?.license_number || 'N/A'}
+              <br />
+              • 📍 My Live Coordinates: {userCoords ? `${userCoords.lat.toFixed(6)}, ${userCoords.lng.toFixed(6)}` : (ride?.pickup_address || 'Unavailable')}
+              <br />
+              • 🔗 Live Tracking Link: http://localhost:3000/tracking/{rideId}
             </p>
           </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '1.25rem', textAlign: 'center' }}>

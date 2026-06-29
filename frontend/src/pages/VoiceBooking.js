@@ -5,8 +5,10 @@ import api from '../services/api';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Map, { MapAutocomplete } from '../components/Map';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function VoiceBooking() {
+  const { lang, t } = useLanguage();
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [msg, setMsg] = useState('');
@@ -19,10 +21,11 @@ export default function VoiceBooking() {
   const recognitionRef = useRef(null);
   const navigate = useNavigate();
 
+  // Re-initialize speech recognition language when platform language changes
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setMsg('Voice recognition is not supported in this browser. Please use Chrome or Edge.');
+      setMsg(lang === 'hi' ? 'आपके ब्राउज़र में आवाज़ पहचान समर्थित नहीं है।' : lang === 'gu' ? 'તમારા બ્રાઉઝરમાં અવાજ ઓળખ સમર્થિત નથી.' : 'Voice recognition is not supported in this browser.');
       setMsgType('error');
       return;
     }
@@ -30,7 +33,10 @@ export default function VoiceBooking() {
     recognitionRef.current.continuous = true;
     recognitionRef.current.interimResults = false;
     recognitionRef.current.maxAlternatives = 1;
-    recognitionRef.current.lang = 'en-IN';
+    
+    // Set dynamic language code
+    recognitionRef.current.lang = lang === 'hi' ? 'hi-IN' : lang === 'gu' ? 'gu-IN' : 'en-IN';
+    
     recognitionRef.current.onresult = (e) => {
       let finalTranscript = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -44,14 +50,14 @@ export default function VoiceBooking() {
       }
     };
     recognitionRef.current.onerror = (e) => {
-      setMsg('Voice recognition error. Please try again.');
+      setMsg(lang === 'hi' ? 'आवाज़ पहचान त्रुटि। कृपया पुनः प्रयास करें।' : lang === 'gu' ? 'અવાજ ઓળખ ભૂલ. કૃપા કરીને ફરીથી પ્રયાસ કરો.' : 'Voice recognition error. Please try again.');
       setMsgType('error');
       setListening(false);
     };
     return () => {
       if (recognitionRef.current) recognitionRef.current.stop();
     };
-  }, []);
+  }, [lang]);
 
   const startListening = () => {
     if (!recognitionRef.current) {
@@ -60,7 +66,13 @@ export default function VoiceBooking() {
       return;
     }
     setTranscript('');
-    setMsg('Listening... Speak your route (e.g., "from Gotri Road to Vrundavan Circle")');
+    setMsg(
+      lang === 'hi' 
+        ? 'सुन रहा हूँ... अपना मार्ग बोलें (जैसे, "गोत्री से वृन्दावन")' 
+        : lang === 'gu' 
+          ? 'સાંભળી રહ્યા છીએ... તમારો માર્ગ બોલો (જેમ કે, "ગોત્રી થી વૃંદાવન")' 
+          : 'Listening... Speak your route (e.g., "from Gotri to Vrundavan Circle")'
+    );
     setMsgType('info');
     recognitionRef.current.start();
     setListening(true);
@@ -71,54 +83,89 @@ export default function VoiceBooking() {
       recognitionRef.current.stop();
     }
     setListening(false);
-    setMsg('Voice input stopped. Click "Parse locations" to resolve coordinates.');
+    setMsg(
+      lang === 'hi' 
+        ? 'आवाज़ इनपुट रुका। स्थानों को खोजने के लिए "आवाज़ इनपुट पार्स करें" पर क्लिक करें।' 
+        : lang === 'gu' 
+          ? 'અવાજ ઇનપુટ અટકાવવામાં આવ્યો. સ્થાનો શોધવા માટે "અવાજ ઇનપુટ વિશ્લેષણ કરો" પર ક્લિક કરો.' 
+          : 'Voice input stopped. Click "Parse voice input" to resolve coordinates.'
+    );
     setMsgType('info');
   };
 
   // Extract address names from voice input and search them on Nominatim
   const parseVoiceInput = async () => {
     if (!transcript) {
-      setMsg('Please speak or enter your route description first.');
+      setMsg(lang === 'hi' ? 'कृपया पहले अपना मार्ग बोलें या लिखें।' : lang === 'gu' ? 'કૃપા કરીને પહેલા તમારો માર્ગ બોલો અથવા લખો.' : 'Please speak or enter your route description first.');
       setMsgType('error');
       return;
     }
 
     setLoading(true);
-    setMsg('Extracting addresses and fetching coordinates...');
+    setMsg(lang === 'hi' ? 'पते खोजे जा रहे हैं और निर्देशांक प्राप्त किए जा रहे हैं...' : lang === 'gu' ? 'સરનામાં શોધવામાં આવી રહ્યા છે અને કોઓર્ડિનેટ્સ મેળવવામાં આવી રહ્યા છે...' : 'Extracting addresses and fetching coordinates...');
     setMsgType('info');
 
-    // Matches: "from [Pickup Name] to [Dropoff Name]"
-    const match = transcript.match(/from\s+(.+?)\s+to\s+(.+)/i);
-    if (!match) {
-      setMsg('Could not parse route. Please say/type it in the format: "from [Location] to [Location]"');
+    // Parse route by language structure
+    let match;
+    let rawPickup = '';
+    let rawDrop = '';
+
+    if (lang === 'hi') {
+      // Matches: "X से Y" or "X से Y तक"
+      match = transcript.match(/(.+?)\s*से\s+(.+?)(?:\s*तक)?$/i);
+      if (match) {
+        rawPickup = match[1].trim();
+        rawDrop = match[2].trim();
+      }
+    } else if (lang === 'gu') {
+      // Matches: "X થી Y" or "X થી Y સુધી"
+      match = transcript.match(/(.+?)\s*થી\s+(.+?)(?:\s*સુધી)?$/i);
+      if (match) {
+        rawPickup = match[1].trim();
+        rawDrop = match[2].trim();
+      }
+    } else {
+      // English Matches: "from [Pickup] to [Drop]"
+      match = transcript.match(/from\s+(.+?)\s+to\s+(.+)/i);
+      if (match) {
+        rawPickup = match[1].trim();
+        rawDrop = match[2].trim();
+      }
+    }
+
+    if (!rawPickup || !rawDrop) {
+      setMsg(
+        lang === 'hi'
+          ? 'मार्ग पार्स नहीं किया जा सका। कृपया इस प्रारूप में बोलें/लिखें: "[स्थान] से [स्थान]"'
+          : lang === 'gu'
+            ? 'માર્ગ શોધી શકાયો નથી. કૃપા કરીને આ ફોર્મેટમાં બોલો/લખો: "[સ્થાન] થી [સ્થાન]"'
+            : 'Could not parse route. Please say/type it in the format: "from [Location] to [Location]"'
+      );
       setMsgType('error');
       setLoading(false);
       return;
     }
 
-    const rawPickup = match[1].trim();
-    const rawDrop = match[2].trim();
-
     try {
       // Fetch coordinates for pickup location (bias to India/Vadodara)
-      const pUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawPickup + ' Vadodara')}&limit=1&countrycodes=in`;
+      const pUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawPickup + ' Vadodara')}&limit=1&countrycodes=in&viewbox=72.8,22.5,73.6,22.1&bounded=0`;
       const pRes = await fetch(pUrl);
       const pData = await pRes.json();
 
       // Fetch coordinates for dropoff location (bias to India/Vadodara)
-      const dUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawDrop + ' Vadodara')}&limit=1&countrycodes=in`;
+      const dUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawDrop + ' Vadodara')}&limit=1&countrycodes=in&viewbox=72.8,22.5,73.6,22.1&bounded=0`;
       const dRes = await fetch(dUrl);
       const dData = await dRes.json();
 
       if (pData.length === 0) {
-        setMsg(`Could not resolve pickup location: "${rawPickup}". Please search it manually below.`);
+        setMsg(lang === 'hi' ? `पिकअप स्थान नहीं मिला: "${rawPickup}"` : lang === 'gu' ? `પીકઅપ સ્થાન મળ્યું નથી: "${rawPickup}"` : `Could not resolve pickup location: "${rawPickup}". Please search it manually below.`);
         setMsgType('error');
         setLoading(false);
         return;
       }
 
       if (dData.length === 0) {
-        setMsg(`Could not resolve dropoff location: "${rawDrop}". Please search it manually below.`);
+        setMsg(lang === 'hi' ? `ड्रॉप स्थान नहीं मिला: "${rawDrop}"` : lang === 'gu' ? `ડ્રોપ સ્થાન મળ્યું નથી: "${rawDrop}"` : `Could not resolve dropoff location: "${rawDrop}". Please search it manually below.`);
         setMsgType('error');
         setLoading(false);
         return;
@@ -139,11 +186,17 @@ export default function VoiceBooking() {
       setPickup(newPickup);
       setDrop(newDrop);
 
-      setMsg(`Resolved successfully!\n• Pickup: ${newPickup.address}\n• Dropoff: ${newDrop.address}`);
+      setMsg(
+        lang === 'hi'
+          ? `सफलतापूर्वक स्थान प्राप्त हुए!\n• पिकअप: ${newPickup.address}\n• ड्रॉप: ${newDrop.address}`
+          : lang === 'gu'
+            ? `સ્થાન સફળતાપૂર્વક મળ્યા!\n• પીકઅપ: ${newPickup.address}\n• ડ્રોપ: ${newDrop.address}`
+            : `Resolved successfully!\n• Pickup: ${newPickup.address}\n• Dropoff: ${newDrop.address}`
+      );
       setMsgType('success');
     } catch (err) {
       console.error(err);
-      setMsg('Failed to fetch location data. Please input addresses manually.');
+      setMsg(lang === 'hi' ? 'स्थान खोजना विफल रहा। कृपया स्वयं लिखें।' : lang === 'gu' ? 'સ્થાન શોધવામાં નિષ્ફળતા. કૃપા કરીને જાતે લખો.' : 'Failed to fetch location data. Please input addresses manually.');
       setMsgType('error');
     } finally {
       setLoading(false);
@@ -152,7 +205,7 @@ export default function VoiceBooking() {
 
   const parseAndBook = async () => {
     if (!pickup.lat || !pickup.lng || !drop.lat || !drop.lng) {
-      setMsg('Please search or parse pickup and drop locations to book.');
+      setMsg(t('voice_verify'));
       setMsgType('error');
       return;
     }
@@ -169,7 +222,7 @@ export default function VoiceBooking() {
         vehicle_type: 'sedan',
         is_pooling: false
       });
-      setMsg(`Ride booked successfully! Ride ID: ${data.rideId}. Pickup OTP: ${data.pickup_otp}`);
+      setMsg(lang === 'hi' ? `सवारी सफलतापूर्वक बुक की गई! आईडी: ${data.rideId}` : lang === 'gu' ? `રાઇડ સફળતાપૂર્વક બુક થઈ ગઈ! આઈડી: ${data.rideId}` : `Ride booked successfully! Ride ID: ${data.rideId}. Pickup OTP: ${data.pickup_otp}`);
       setMsgType('success');
       setTimeout(() => {
         navigate(`/tracking/${data.rideId}`);
@@ -194,10 +247,10 @@ export default function VoiceBooking() {
       <Card>
         <h1 className="card-title">
           <FiMic style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-          Voice-Based Booking
+          {t('voice_title')}
         </h1>
         <p className="card-subtitle">
-          Use your voice to book a ride. Speak your pickup and drop locations (e.g., "from Gotri to Vrundavan Circle") and confirm the locations.
+          {t('voice_desc')}
         </p>
 
         {msg && (
@@ -209,14 +262,20 @@ export default function VoiceBooking() {
         <div style={{ marginBottom: '1.5rem' }}>
           <label className="form-label">
             <FiMic style={{ marginRight: '0.5rem' }} />
-            Voice Input (or type manually)
+            {lang === 'hi' ? 'आवाज़ इनपुट (या स्वयं लिखें)' : lang === 'gu' ? 'અવાજ ઇનપુટ (અથવા જાતે લખો)' : 'Voice Input (or type manually)'}
           </label>
           <textarea
             className="form-textarea"
             rows={3}
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
-            placeholder="Speak or type: 'from Gotri to Vrundavan Circle'"
+            placeholder={
+              lang === 'hi' 
+                ? "जैसे: 'गोत्री से वृन्दावन सर्कल'" 
+                : lang === 'gu' 
+                  ? "જેમ કે: 'ગોત્રી થી વૃંદાવન સર્કલ'" 
+                  : "Speak or type: 'from Gotri to Vrundavan Circle'"
+            }
             style={{ fontFamily: 'inherit' }}
           />
         </div>
@@ -224,16 +283,16 @@ export default function VoiceBooking() {
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
           {!listening ? (
             <Button variant="primary" onClick={startListening} disabled={loading}>
-              <FiMic /> Start Recording
+              <FiMic /> {t('voice_start')}
             </Button>
           ) : (
             <Button variant="danger" onClick={stopListening}>
-              <FiMicOff /> Stop Recording
+              <FiMicOff /> {t('voice_stop')}
             </Button>
           )}
 
           <Button variant="secondary" onClick={parseVoiceInput} disabled={loading || !transcript}>
-            ⚙️ Parse Voice Input
+            ⚙️ {t('voice_parse')}
           </Button>
         </div>
 
@@ -245,12 +304,12 @@ export default function VoiceBooking() {
           border: '1px solid var(--border-color)'
         }}>
           <h3 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: 600 }}>
-            Verify & Edit Locations
+            {t('voice_verify')}
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', flexWrap: 'wrap' }}>
             <div>
               <label className="form-label">
-                <FiMapPin style={{ marginRight: '0.5rem' }} /> Pickup Location
+                <FiMapPin style={{ marginRight: '0.5rem' }} /> {t('pickup')}
               </label>
               <MapAutocomplete
                 onPlaceSelected={(place) => setPickup(place)}
@@ -260,7 +319,7 @@ export default function VoiceBooking() {
             </div>
             <div>
               <label className="form-label">
-                <FiMapPin style={{ marginRight: '0.5rem' }} /> Drop Location
+                <FiMapPin style={{ marginRight: '0.5rem' }} /> {t('drop')}
               </label>
               <MapAutocomplete
                 onPlaceSelected={(place) => setDrop(place)}
@@ -278,13 +337,15 @@ export default function VoiceBooking() {
           className="w-full"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
         >
-          <FiCheckCircle /> {loading ? 'Booking...' : 'Book Ride Now'}
+          <FiCheckCircle /> {t('voice_book_now')}
         </Button>
       </Card>
 
       {(pickup.lat || drop.lat) && (
         <Card style={{ padding: '1rem' }}>
-          <h3 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: 600 }}>Route Map preview</h3>
+          <h3 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: 600 }}>
+            {lang === 'hi' ? 'मार्ग नक्शा पूर्वावलोकन' : lang === 'gu' ? 'માર્ગ નકશો પૂર્વાવલોકન' : 'Route Map preview'}
+          </h3>
           <Map
             center={mapCenter}
             zoom={13}

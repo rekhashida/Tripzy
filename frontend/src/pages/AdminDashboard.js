@@ -14,6 +14,29 @@ export default function AdminDashboard() {
   const [rides, setRides] = useState([]);
   const [parcels, setParcels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [campaignLoading, setCampaignLoading] = useState(false);
+  const [campaignMsg, setCampaignMsg] = useState('');
+  const [campaignMsgType, setCampaignMsgType] = useState('info');
+
+  const triggerSmsCampaign = async () => {
+    setCampaignLoading(true);
+    setCampaignMsg('');
+    try {
+      const { data } = await api.post('/admin/send-inactivity-reminders');
+      if (data.success) {
+        setCampaignMsg(data.message);
+        setCampaignMsgType('success');
+      } else {
+        setCampaignMsg('Failed to trigger campaign.');
+        setCampaignMsgType('error');
+      }
+    } catch (e) {
+      setCampaignMsg(e.response?.data?.error || 'Failed to trigger campaign.');
+      setCampaignMsgType('error');
+    } finally {
+      setCampaignLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -204,6 +227,29 @@ export default function AdminDashboard() {
           </Card>
         )}
       </div>
+
+      <Card style={{ marginBottom: '1.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
+        <h3 className="card-title" style={{ fontSize: '1.25rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          📢 Marketing & User Engagement Campaigns
+        </h3>
+        <p className="card-subtitle" style={{ marginBottom: '1.25rem' }}>
+          Scan the database for registered riders who have been inactive for more than a week, and automatically send them a personalized SMS nudge.
+        </p>
+        
+        {campaignMsg && (
+          <div className={`alert alert-${campaignMsgType}`} style={{ marginBottom: '1rem' }}>
+            {campaignMsg}
+          </div>
+        )}
+
+        <button 
+          className="btn btn-primary"
+          onClick={triggerSmsCampaign}
+          disabled={campaignLoading}
+        >
+          {campaignLoading ? 'Sending Reminders...' : 'Trigger Inactivity SMS Reminders'}
+        </button>
+      </Card>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '1.5rem' }}>
         <Card>

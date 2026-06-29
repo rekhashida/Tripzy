@@ -96,7 +96,8 @@ export default function Login() {
       if (typeof google !== 'undefined') {
         google.accounts.id.initialize({
           client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || '928961312935-nqqsqa4c9f0nsdeiouv09l74hud0eukl.apps.googleusercontent.com',
-          callback: handleGoogleCredentialResponse
+          callback: handleGoogleCredentialResponse,
+          auto_select: false // Forces Google account list picker to display
         });
         
         google.accounts.id.renderButton(
