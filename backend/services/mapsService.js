@@ -5,7 +5,7 @@ async function getDistanceAndDuration(originLat, originLng, destLat, destLng) {
   if (!MAPS_API_KEY) {
     // Fallback: rough estimate 1 deg ≈ 111 km
     const km = Math.sqrt(Math.pow((destLat - originLat) * 111, 2) + Math.pow((destLng - originLng) * 111, 2));
-    const min = Math.round(km * 3); // ~20 km/h assumption
+    const min = Math.round(km * 1.6); // ~37.5 km/h average city traffic assumption
     return { distanceKm: Math.round(km * 100) / 100, durationMin: Math.max(1, min) };
   }
   const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${originLat},${originLng}&destinations=${destLat},${destLng}&key=${MAPS_API_KEY}`;
@@ -23,7 +23,7 @@ async function getDistanceAndDuration(originLat, originLng, destLat, destLng) {
     console.error('Maps API error:', err.message);
   }
   const km = Math.sqrt(Math.pow((destLat - originLat) * 111, 2) + Math.pow((destLng - originLng) * 111, 2));
-  return { distanceKm: Math.round(km * 100) / 100, durationMin: Math.max(1, Math.round(km * 3)) };
+  return { distanceKm: Math.round(km * 100) / 100, durationMin: Math.max(1, Math.round(km * 1.6)) };
 }
 
 module.exports = { getDistanceAndDuration };

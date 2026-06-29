@@ -130,12 +130,19 @@ export default function Map({ center, zoom = 14, markers = [], path = [], height
  * Free, fast, and does not require an API key.
  * Biased to India and features self-healing junction/circle fallbacks.
  */
-export function MapAutocomplete({ onPlaceSelected, placeholder = 'Search or enter address...', className = '' }) {
-  const [address, setAddress] = React.useState('');
+export function MapAutocomplete({ onPlaceSelected, value = '', placeholder = 'Search or enter address...', className = '' }) {
+  const [address, setAddress] = React.useState(value);
   const [suggestions, setSuggestions] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = useRef(null);
+
+  // Sync state with incoming value updates
+  useEffect(() => {
+    if (value) {
+      setAddress(value);
+    }
+  }, [value]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -229,20 +236,6 @@ export function MapAutocomplete({ onPlaceSelected, placeholder = 'Search or ente
     }
   };
 
-  const handleCoordBlur = (e) => {
-    const input = e.target.value;
-    const parts = input.split(',').map((s) => s.trim());
-    const lat = parseFloat(parts[0]);
-    const lng = parseFloat(parts[1]);
-    if (!Number.isNaN(lat) && !Number.isNaN(lng) && onPlaceSelected) {
-      onPlaceSelected({
-        address: address || `Coordinates: ${lat}, ${lng}`,
-        lat,
-        lng,
-      });
-    }
-  };
-
   return (
     <div style={{ position: 'relative' }} ref={dropdownRef}>
       <div style={{ position: 'relative' }}>
@@ -311,14 +304,6 @@ export function MapAutocomplete({ onPlaceSelected, placeholder = 'Search or ente
           ))}
         </ul>
       )}
-
-      <input
-        type="text"
-        className={`form-input ${className}`}
-        placeholder="Or enter coordinates (e.g. 23.0225, 72.5714)"
-        onBlur={handleCoordBlur}
-        style={{ marginTop: '0.5rem', width: '100%' }}
-      />
     </div>
   );
 }
