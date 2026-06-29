@@ -165,8 +165,8 @@ export function MapAutocomplete({ onPlaceSelected, value = '', placeholder = 'Se
     const delayDebounceFn = setTimeout(async () => {
       setLoading(true);
       try {
-        // Bias to India by setting countrycodes=in
-        let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=5&addressdetails=1&countrycodes=in`;
+        // Bias to Vadodara/Gujarat by setting countrycodes=in and viewbox bounds
+        let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=10&addressdetails=1&countrycodes=in&viewbox=72.8,22.5,73.6,22.1&bounded=0`;
         
         let response = await fetch(url);
         if (response.ok) {
@@ -184,7 +184,7 @@ export function MapAutocomplete({ onPlaceSelected, value = '', placeholder = 'Se
               .replace(/chokdi/gi, 'char rasta')
               .replace(/crossroad[s]?/gi, 'char rasta');
               
-            let fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackQuery)}&limit=5&addressdetails=1&countrycodes=in`;
+            let fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackQuery)}&limit=10&addressdetails=1&countrycodes=in&viewbox=72.8,22.5,73.6,22.1&bounded=0`;
             let fallbackResponse = await fetch(fallbackUrl);
             
             if (fallbackResponse.ok) {
@@ -199,7 +199,7 @@ export function MapAutocomplete({ onPlaceSelected, value = '', placeholder = 'Se
                   .replace(/chokdi/gi, '')
                   .replace(/crossroad[s]?/gi, '');
                   
-                let strippedUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(strippedQuery)}&limit=5&addressdetails=1&countrycodes=in`;
+                let strippedUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(strippedQuery)}&limit=10&addressdetails=1&countrycodes=in&viewbox=72.8,22.5,73.6,22.1&bounded=0`;
                 let strippedResponse = await fetch(strippedUrl);
                 if (strippedResponse.ok) {
                   data = await strippedResponse.json();
@@ -277,7 +277,7 @@ export function MapAutocomplete({ onPlaceSelected, value = '', placeholder = 'Se
           padding: 0,
           margin: '4px 0 0 0',
           zIndex: 1000,
-          maxHeight: '200px',
+          maxHeight: '320px',
           overflowY: 'auto',
           boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
         }}>
