@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FiMap, FiNavigation, FiMapPin, FiClock, FiDollarSign, FiUser, FiPhone, FiCheckCircle } from 'react-icons/fi';
 import api from '../services/api';
 import { joinRideRoom, leaveRideRoom, onLocationUpdate, offLocationUpdate, onStatusUpdate, offStatusUpdate } from '../services/socket';
@@ -25,6 +25,40 @@ export default function RealTimeTracking() {
   const [emergencyPhone, setEmergencyPhone] = useState('');
   const [showSmsModal, setShowSmsModal] = useState(false);
   const [userCoords, setUserCoords] = useState(null);
+
+  // Post-ride Rating states
+  const navigate = useNavigate();
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [ratingComment, setRatingComment] = useState('');
+  const [selectedChips, setSelectedChips] = useState([]);
+  const [ratingSuccess, setRatingSuccess] = useState(false);
+
+  const toggleFeedbackChip = (chip) => {
+    setSelectedChips((prev) => 
+      prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]
+    );
+  };
+
+  const handleRatingSubmit = async () => {
+    try {
+      const comment = [...selectedChips, ratingComment].filter(Boolean).join('. ');
+      await api.post('/ratings', {
+        ride_id: parseInt(rideId, 10),
+        rating,
+        comment
+      });
+      localStorage.setItem(`rated_ride_${rideId}`, 'true');
+      setShowRatingModal(false);
+      setRatingSuccess(true);
+      setTimeout(() => {
+        setRatingSuccess(false);
+        navigate('/my-rides');
+      }, 2500);
+    } catch (err) {
+      console.error('Failed to submit rating:', err);
+    }
+  };
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -88,6 +122,14 @@ export default function RealTimeTracking() {
       const { data } = await api.get(`/tracking/ride/${rideId}`);
       setRide(data);
       setDriverLoc(data.driverLocation);
+
+      // Auto-open rating modal for riders if ride is completed and not rated yet
+      if (data.status === 'completed') {
+        const ratedKey = `rated_ride_${rideId}`;
+        if (!localStorage.getItem(ratedKey)) {
+          setShowRatingModal(true);
+        }
+      }
     } catch (e) {
       setErr(e.response?.data?.error || 'Ride not found');
     } finally {
@@ -409,6 +451,105 @@ export default function RealTimeTracking() {
           <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
             <Button variant="outline" onClick={() => setShowSmsModal(false)}>Close</Button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Post-Ride Rating Modal */}
+      <Modal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        title="Rate Your Ride with Tripzy"
+      >
+        <div style={{ padding: '1rem 0', textAlign: 'center' }}>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+            We hope you had a pleasant journey! Please rate your driver <strong>{ride?.driver_name || 'Driver'}</strong>.
+          </p>
+
+          {/* Interactive Star Selector */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <span
+                key={star}
+                onClick={() => setRating(star)}
+                style={{
+                  fontSize: '2.75rem',
+                  cursor: 'pointer',
+                  color: star <= rating ? '#f59e0b' : 'var(--border-color, #e2e8f0)',
+                  transition: 'all 0.15s ease-in-out',
+                  transform: star <= rating ? 'scale(1.15)' : 'scale(1.0)',
+                  display: 'inline-block'
+                }}
+              >
+                ★
+              </span>
+            ))}
+          </div>
+
+          {/* Feedback Chips */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', textAlign: 'left' }}>
+              What went well?
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'left' }}>
+              {['Clean Car 🧼', 'Safe Driving 🛡️', 'Polite Driver 😊', 'Good Route choice 🗺️', 'Great Conversation 💬'].map((chip) => {
+                const active = selectedChips.includes(chip);
+                return (
+                  <button
+                    key={chip}
+                    onClick={() => toggleFeedbackChip(chip)}
+                    style={{
+                      border: '1px solid ' + (active ? 'var(--primary)' : 'var(--border-color)'),
+                      background: active ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                      color: active ? 'var(--primary-light)' : 'var(--text-primary)',
+                      padding: '0.4rem 0.8rem',
+                      borderRadius: '20px',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease-in-out'
+                    }}
+                  >
+                    {chip}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Comment input */}
+          <div style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
+            <label className="form-label">Additional Comments (Optional)</label>
+            <textarea
+              className="form-textarea"
+              rows={3}
+              value={ratingComment}
+              onChange={(e) => setRatingComment(e.target.value)}
+              placeholder="Tell us more about your ride..."
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+            <Button variant="primary" onClick={handleRatingSubmit} className="flex-1">
+              Submit Review
+            </Button>
+            <Button variant="outline" onClick={() => setShowRatingModal(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal
+        isOpen={ratingSuccess}
+        onClose={() => setRatingSuccess(false)}
+        title="Thank You!"
+      >
+        <div style={{ padding: '2rem 0', textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', color: 'var(--success)', marginBottom: '1rem' }}>🎉</div>
+          <h3>Feedback Submitted Successfully!</h3>
+          <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+            Your rating helps us keep the Tripzy community safe and clean. Redirecting to My Rides...
+          </p>
         </div>
       </Modal>
     </>
