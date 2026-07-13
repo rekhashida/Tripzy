@@ -15,6 +15,7 @@ const trackingRoutes = require('./routes/trackingRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const ratingRoutes = require('./routes/ratingRoutes');
 const driverRoutes = require('./routes/driverRoutes');
+const chatbotRoutes = require('./routes/chatbotRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -32,6 +33,7 @@ app.use('/api/tracking', trackingRoutes);
 app.use('/api/driver', driverRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ratings', ratingRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true, message: 'Tripzy API' }));
 app.use(errorHandler);

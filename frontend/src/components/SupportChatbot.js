@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FiMessageSquare, FiX, FiSend } from 'react-icons/fi';
 import { useLanguage } from '../context/LanguageContext';
+import api from '../services/api';
 
 // Custom Interactive Robot Car SVG Icon
 const RobotCarIcon = () => (
@@ -105,18 +106,29 @@ export default function SupportChatbot() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleSendMessage = (textToSend) => {
+  const handleSendMessage = async (textToSend) => {
     if (!textToSend.trim()) return;
 
     const userMessage = { sender: 'user', text: textToSend };
     setMessages((prev) => [...prev, userMessage]);
-
-    setTimeout(() => {
-      const botResponseText = getBotResponse(textToSend);
-      setMessages((prev) => [...prev, { sender: 'bot', text: botResponseText }]);
-    }, 600);
-
     setInput('');
+
+    // Add a loading placeholder for the bot
+    const placeholderId = Date.now();
+    setMessages((prev) => [...prev, { sender: 'bot', text: 'Thinking... 🤖💭', placeholderId }]);
+
+    try {
+      const { data } = await api.post('/chatbot/chat', { message: textToSend, lang });
+      setMessages((prev) => 
+        prev.map((m) => m.placeholderId === placeholderId ? { sender: 'bot', text: data.reply } : m)
+      );
+    } catch (e) {
+      console.warn('AI API call failed, falling back to local engine:', e.message);
+      const botResponseText = getBotResponse(textToSend);
+      setMessages((prev) => 
+        prev.map((m) => m.placeholderId === placeholderId ? { sender: 'bot', text: botResponseText } : m)
+      );
+    }
   };
 
   const getBotResponse = (query) => {
