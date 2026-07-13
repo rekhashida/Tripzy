@@ -41,4 +41,9 @@ function emitToDriver(driverId, event, payload) {
   ioInstance.to(`driver:${driverId}`).emit(event, payload);
 }
 
-module.exports = { setupSocket, getIo, emitToDriver };
+function emitStatusUpdate(rideId, status, extra = {}) {
+  if (!ioInstance) return;
+  ioInstance.to(`ride:${rideId}`).emit('status-update', { status, ...extra });
+}
+
+module.exports = { setupSocket, getIo, emitToDriver, emitStatusUpdate };

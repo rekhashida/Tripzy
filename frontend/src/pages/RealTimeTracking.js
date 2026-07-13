@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiMap, FiNavigation, FiMapPin, FiClock, FiDollarSign, FiUser, FiPhone, FiCheckCircle } from 'react-icons/fi';
 import api from '../services/api';
-import { joinRideRoom, leaveRideRoom, onLocationUpdate, offLocationUpdate } from '../services/socket';
+import { joinRideRoom, leaveRideRoom, onLocationUpdate, offLocationUpdate, onStatusUpdate, offStatusUpdate } from '../services/socket';
 import Map from '../components/Map';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
@@ -45,9 +45,17 @@ export default function RealTimeTracking() {
       setDriverLoc(loc);
     };
     onLocationUpdate(handler);
+
+    const statusHandler = (data) => {
+      console.log('Real-time ride status update received:', data);
+      loadRide();
+    };
+    onStatusUpdate(statusHandler);
+
     return () => {
       leaveRideRoom(rideId);
       offLocationUpdate();
+      offStatusUpdate();
     };
   }, [rideId]);
 

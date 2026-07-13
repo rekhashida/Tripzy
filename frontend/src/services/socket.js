@@ -53,3 +53,13 @@ export function offLocationUpdate() {
   const s = getSocket();
   s.off('location-update');
 }
+
+export function onStatusUpdate(callback) {
+  const s = getSocket();
+  s.on('status-update', callback);
+}
+
+export function offStatusUpdate() {
+  const s = getSocket();
+  s.off('status-update');
+}

@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const { verifyOTP } = require('../services/otpService');
 const { haversineDistance } = require('../services/matchingService');
+const { emitStatusUpdate } = require('../socket');
 
 const getDriverByUserId = async (userId) => {
   const [rows] = await pool.query('SELECT * FROM drivers WHERE user_id = ?', [userId]);
@@ -162,6 +163,13 @@ const acceptRide = async (req, res) => {
     await pool.query('UPDATE rides SET driver_id = ?, status = ? WHERE id = ?', [driver.id, 'driver_assigned', rideId]);
     await pool.query('UPDATE drivers SET is_available = 0 WHERE id = ?', [driver.id]);
 
+    // Fetch driver name and phone to notify rider
+    const [driverInfo] = await pool.query('SELECT u.name, u.phone FROM users u WHERE u.id = ?', [driver.user_id]);
+    emitStatusUpdate(rideId, 'driver_assigned', {
+      driverName: driverInfo[0]?.name,
+      driverPhone: driverInfo[0]?.phone
+    });
+
     const [ride] = await pool.query('SELECT * FROM rides WHERE id = ?', [rideId]);
     res.json({ ride: ride[0], message: 'Ride accepted. Awaiting pickup OTP.' });
   } catch (e) {
@@ -199,6 +207,7 @@ const updateRideStatus = async (req, res) => {
       if (!valid) return res.status(400).json({ error: 'Invalid or expired OTP.' });
 
       await pool.query('UPDATE rides SET status = ?, started_at = NOW() WHERE id = ?', ['in_progress', rideId]);
+      emitStatusUpdate(rideId, 'in_progress');
       return res.json({ message: 'Ride started. Safe driving!' });
     }
 
@@ -213,6 +222,7 @@ const updateRideStatus = async (req, res) => {
 
       await pool.query('UPDATE rides SET status = ?, completed_at = NOW() WHERE id = ?', ['completed', rideId]);
       await pool.query('UPDATE drivers SET is_available = 1, total_trips = total_trips + 1 WHERE id = ?', [driver.id]);
+      emitStatusUpdate(rideId, 'completed');
       return res.json({ message: 'Ride completed. Great job!' });
     }
 
