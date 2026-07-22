@@ -1340,4 +1340,18 @@ textarea {
   opacity: 0.9;
 }
 
+.ride-booking-grid {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 1.5rem;
+  width: 100%;
+  align-items: start;
+}
+
+@media (max-width: 991px) {
+  .ride-booking-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 

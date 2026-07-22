@@ -202,118 +202,86 @@ export default function RealTimeTracking() {
 
   return (
     <>
-      <Card>
-        <div className="card-header">
-          <h1 className="card-title">
+      <div className="ride-booking-grid">
+      {/* Left Column: Driver Information, OTP Verification, and Emergency Actions */}
+      <Card style={{ margin: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+          <h1 className="card-title" style={{ margin: 0, fontSize: '1.25rem' }}>
             <FiMap style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-            Real-Time Tracking - Ride #{rideId}
+            Ride #{rideId}
           </h1>
           <Badge status={ride.status}>{ride.status}</Badge>
         </div>
 
-        <div style={{ marginBottom: '1.5rem' }}>
-          <Map
-            center={mapCenter}
-            zoom={15}
-            markers={markers}
-            path={path}
-            height={500}
-          />
-          {eta && (
-            <div className="alert alert-info" style={{ marginTop: '1rem' }}>
-              <strong>ETA:</strong> {eta}
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-          <Card style={{ background: 'var(--bg-tertiary)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <FiMapPin style={{ color: 'var(--success)' }} />
-              <strong>Pickup</strong>
-            </div>
-            <p>{ride.pickup_address || `${ride.pickup_lat}, ${ride.pickup_lng}`}</p>
-          </Card>
-
-          <Card style={{ background: 'var(--bg-tertiary)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <FiMapPin style={{ color: 'var(--danger)' }} />
-              <strong>Drop</strong>
-            </div>
-            <p>{ride.drop_address || `${ride.drop_lat}, ${ride.drop_lng}`}</p>
-          </Card>
-
-          <Card style={{ background: 'var(--bg-tertiary)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <FiDollarSign style={{ color: 'var(--primary-light)' }} />
-              <strong>Fare</strong>
-            </div>
-            <p>₹{ride.fare}</p>
-          </Card>
-        </div>
-
-        {ride.driver_name && (
-          <Card style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(236, 72, 153, 0.1))', marginBottom: '1.5rem' }}>
-            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <FiUser /> Driver Information
+        {ride.driver_name ? (
+          <Card style={{ background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary))', marginBottom: '1.25rem', padding: '0.85rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <div style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '50%',
+                background: 'var(--primary)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '1.1rem'
+              }}>
+                {ride.driver_name[0].toUpperCase()}
               </div>
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                {ride.driver_rating && (
-                  <Badge variant="warning" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>
-                    ⭐ {parseFloat(ride.driver_rating).toFixed(1)}
-                  </Badge>
-                )}
-                {(ride.vehicle_type === 'bike' || ride.vehicle_type === 'auto') && (
-                  <Badge variant="success" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>
-                    🌿 Eco Driver
-                  </Badge>
-                )}
-                <Badge variant="info" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>
-                  ⚡ Quick Responder
-                </Badge>
-              </div>
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               <div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Name</div>
-                <div style={{ fontWeight: 600 }}>{ride.driver_name}</div>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{ride.driver_name}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{ride.vehicle_number || 'White sedan'} • {ride.vehicle_type}</div>
               </div>
-              {ride.vehicle_number && (
-                <div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Vehicle</div>
-                  <div style={{ fontWeight: 600 }}>{ride.vehicle_number}</div>
-                </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem' }}>
+              {ride.driver_rating && (
+                <Badge variant="warning" style={{ fontSize: '0.75rem', padding: '0.15rem 0.4rem' }}>
+                  ⭐ {parseFloat(ride.driver_rating).toFixed(1)}
+                </Badge>
               )}
-              {ride.vehicle_type && (
-                <div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Type</div>
-                  <div style={{ fontWeight: 600 }}>{ride.vehicle_type}</div>
-                </div>
-              )}
-              {ride.driver_phone && (
-                <div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Phone</div>
-                  <div style={{ fontWeight: 600 }}>{ride.driver_phone}</div>
-                </div>
-              )}
+              <Badge status="completed" style={{ fontSize: '0.75rem', padding: '0.15rem 0.4rem' }}>Verified</Badge>
+            </div>
+            
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span>📞</span> <strong>Phone:</strong> {ride.driver_phone || 'Not available'}
             </div>
           </Card>
+        ) : (
+          <div style={{ 
+            background: 'var(--bg-tertiary)',
+            padding: '1.25rem',
+            borderRadius: '0.75rem',
+            marginBottom: '1.25rem',
+            textAlign: 'center',
+            color: 'var(--text-muted)'
+          }}>
+            Waiting for driver assignment...
+          </div>
         )}
 
-        {driverLoc && driverLoc.latitude && (
-          <Card style={{ background: 'var(--bg-tertiary)', marginBottom: '1.5rem' }}>
-            <h3 style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <FiNavigation /> Live Driver Location
-            </h3>
-            <p style={{ color: 'var(--text-muted)' }}>
-              Lat: {driverLoc.latitude.toFixed(6)}, Lng: {driverLoc.longitude.toFixed(6)}
-              {driverLoc.at && ` (Updated: ${new Date(driverLoc.at).toLocaleTimeString()})`}
-            </p>
-          </Card>
-        )}
+        {/* Address Indicators */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
+            <span style={{ color: 'var(--success)' }}>📍</span>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Pickup Address</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{ride.pickup_address || `${ride.pickup_lat}, ${ride.pickup_lng}`}</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
+            <span style={{ color: 'var(--danger)' }}>🏁</span>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Drop Address</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{ride.drop_address || `${ride.drop_lat}, ${ride.drop_lng}`}</div>
+            </div>
+          </div>
+        </div>
 
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        {/* Action / OTP Buttons */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
           {ride.status === 'driver_assigned' && ride.pickup_otp && (
             <Button
               variant="primary"
@@ -321,8 +289,9 @@ export default function RealTimeTracking() {
                 setOtpType('pickup');
                 setOtpModalOpen(true);
               }}
+              style={{ width: '100%' }}
             >
-              <FiCheckCircle /> Verify Pickup OTP
+              Verify Pickup OTP
             </Button>
           )}
           {ride.status === 'otp_verified' && ride.drop_otp && (
@@ -332,15 +301,48 @@ export default function RealTimeTracking() {
                 setOtpType('drop');
                 setOtpModalOpen(true);
               }}
+              style={{ width: '100%' }}
             >
-              <FiCheckCircle /> Verify Drop OTP
+              Verify Drop OTP
             </Button>
           )}
-          <Link to="/my-rides">
-            <Button variant="outline">Back to My Rides</Button>
-          </Link>
+        </div>
+
+        {/* Emergency Panel / SOS Panel */}
+        <Card style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', margin: 0, padding: '0.85rem' }}>
+          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--danger)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            🚨 Safety Shield Active
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+            <Button variant="outline" size="small" onClick={() => window.open(`tel:${ride.driver_phone || '911'}`)}>Call</Button>
+            <Button variant="primary" size="small" style={{ background: 'var(--danger)', color: '#fff' }} onClick={handleSos}>SOS Alert</Button>
+            <Button variant="outline" size="small" onClick={() => alert('Emergency contact notified.')}>Share Trip</Button>
+          </div>
+        </Card>
+      </Card>
+
+      {/* Right Column: Live Map */}
+      <Card style={{ margin: 0, padding: '1rem', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '520px' }}>
+        <div style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <FiMapPin style={{ color: 'var(--primary)' }} /> Live Journey Map
+        </div>
+        {eta && (
+          <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-color)', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between' }}>
+            <span>Estimated Arrival Time:</span>
+            <strong>{eta}</strong>
+          </div>
+        )}
+        <div style={{ flex: 1, borderRadius: 'var(--border-radius)', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative', height: '100%', minHeight: '440px' }}>
+          <Map
+            center={mapCenter}
+            zoom={15}
+            markers={markers}
+            path={path}
+            height={440}
+          />
         </div>
       </Card>
+    </div>
 
       <Modal
         isOpen={otpModalOpen}

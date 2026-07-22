@@ -200,21 +200,22 @@ export default function RideBooking() {
     : { lat: 23.0225, lng: 72.5714 };
 
   return (
-    <>
-      <Card>
+    <div className="ride-booking-grid">
+      {/* Left Column: Input Form & Vehicle Options Card */}
+      <Card style={{ margin: 0 }}>
         <h1 className="card-title">
           <FiNavigation style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
           Book a Ride
         </h1>
-        <p className="card-subtitle">Select your pickup and drop locations to get started</p>
+        <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Select your locations and details</p>
 
         {msg && (
-          <div className={`alert alert-${msgType === 'success' ? 'success' : msgType === 'error' ? 'error' : 'info'}`}>
+          <div className={`alert alert-${msgType === 'success' ? 'success' : msgType === 'error' ? 'error' : 'info'}`} style={{ marginBottom: '1.25rem' }}>
             {msg}
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
           <div>
             <label className="form-label">
               <FiMapPin style={{ marginRight: '0.5rem' }} />
@@ -227,7 +228,7 @@ export default function RideBooking() {
               value={pickup.address}
             />
             {pickup.lat && (
-              <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                 Lat: {pickup.lat.toFixed(6)}, Lng: {pickup.lng.toFixed(6)}
               </div>
             )}
@@ -245,44 +246,43 @@ export default function RideBooking() {
               value={drop.address}
             />
             {drop.lat && (
-              <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                 Lat: {drop.lat.toFixed(6)}, Lng: {drop.lng.toFixed(6)}
               </div>
             )}
           </div>
+
+          <div>
+            <Select
+              label={
+                <>
+                  <FiPackage style={{ marginRight: '0.5rem' }} />
+                  Luggage Size
+                </>
+              }
+              value={luggageSize}
+              onChange={(e) => setLuggageSize(e.target.value)}
+              options={[
+                { value: 'small', label: 'Small' },
+                { value: 'medium', label: 'Medium' },
+                { value: 'large', label: 'Large' }
+              ]}
+            />
+          </div>
         </div>
 
-        <div style={{ marginBottom: '1.5rem' }}>
-          <Map
-            center={mapCenter}
-            zoom={13}
-            markers={markers}
-            height={400}
-            onMapClick={handleMapClick}
-          />
-        </div>
-
-        <div style={{ marginBottom: '1.5rem' }}>
-          <Select
-            label={
-              <>
-                <FiPackage style={{ marginRight: '0.5rem' }} />
-                Luggage Size
-              </>
-            }
-            value={luggageSize}
-            onChange={(e) => setLuggageSize(e.target.value)}
-            options={[
-              { value: 'small', label: 'Small' },
-              { value: 'medium', label: 'Medium' },
-              { value: 'large', label: 'Large' }
-            ]}
-          />
-        </div>
-
-        {fare && (
+        {!fare ? (
+          <Button
+            variant="primary"
+            onClick={estimate}
+            disabled={loading}
+            style={{ width: '100%', padding: '0.85rem' }}
+          >
+            {loading ? 'Estimating...' : 'Estimate Fare'}
+          </Button>
+        ) : (
           <>
-            <div style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.85rem', color: 'var(--text-secondary)' }}>
+            <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
               Select Vehicle Option
             </div>
             <div className="vehicle-selector-list-horizontal">
@@ -319,44 +319,26 @@ export default function RideBooking() {
             <Card style={{ 
               background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary))',
               border: '1px solid var(--border-color)',
-              marginBottom: '1.5rem'
+              marginBottom: '1.25rem',
+              padding: '0.85rem'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Fare ({vehicleType})</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary-light)' }}>
-                    <FiDollarSign style={{ display: 'inline' }} /> ₹{getVehicleFare(vehicleType)}
-                  </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Estimated Fare</span>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>₹{getVehicleFare(vehicleType)}</span>
                 </div>
                 {distance && (
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Distance</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{distance} km</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Distance</span>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>{distance} km</span>
                   </div>
                 )}
                 {duration && (
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Duration</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>
-                      <FiClock style={{ display: 'inline', marginRight: '0.25rem' }} />
-                      {duration} min
-                    </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Duration</span>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>{duration} min</span>
                   </div>
                 )}
-              </div>
-            </Card>
-
-            <Card style={{
-              background: 'var(--bg-tertiary)',
-              border: '1px dashed var(--border-color)',
-              marginBottom: '1.5rem',
-              padding: '1rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: '1.5rem' }}>🧠</span>
-                <div style={{ fontSize: '0.85rem', lineHeight: '1.4', color: 'var(--text-muted)' }}>
-                  {getAiPriceInsight().text}
-                </div>
               </div>
             </Card>
 
@@ -364,96 +346,59 @@ export default function RideBooking() {
               <Card style={{ 
                 background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(249, 115, 22, 0.15))',
                 border: '2px solid rgba(239, 68, 68, 0.5)',
-                marginBottom: '1.5rem'
+                marginBottom: '1.25rem',
+                padding: '0.85rem'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'rgba(239, 68, 68, 0.9)', marginBottom: '0.3rem' }}>
-                      🔥 SURGE PRICING ACTIVE
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      {surgeInfo.isPeakHour && 'Peak Hours Detected'}
-                      {surgeInfo.isLateNight && 'Late Night Demand'}
+                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(239, 68, 68, 0.9)' }}>
+                      🔥 SURGE ACTIVE
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Surge: {(surgeInfo.surge * 100 - 100).toFixed(0)}%</div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'rgba(239, 68, 68, 0.9)' }}>
-                      Base: ₹{surgeInfo.subtotal} → ₹{fare}
+                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'rgba(239, 68, 68, 0.9)' }}>
+                      +{(surgeInfo.surge * 100 - 100).toFixed(0)}%
                     </div>
                   </div>
                 </div>
               </Card>
             )}
 
-            {surgeInfo && surgeInfo.luggageMultiplier > 1.0 && (
-              <Card style={{ 
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.15))',
-                border: '2px solid rgba(59, 130, 246, 0.5)',
-                marginBottom: '1.5rem'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                  <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'rgba(59, 130, 246, 0.9)', marginBottom: '0.3rem' }}>
-                      📦 LUGGAGE CHARGE
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      {surgeInfo.luggageSize === 'small' && 'Small (No extra charge)'}
-                      {surgeInfo.luggageSize === 'medium' && 'Medium (+50% luggage fee)'}
-                      {surgeInfo.luggageSize === 'large' && 'Large (+80% luggage fee)'}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Multiplier: {(surgeInfo.luggageMultiplier).toFixed(1)}x</div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'rgba(59, 130, 246, 0.9)' }}>
-                      +₹{(fare - Math.round(surgeInfo.surge * surgeInfo.subtotal))}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {(vehicleType === 'bike' || vehicleType === 'auto') && distance && (
-              <Card style={{ 
-                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15))',
-                border: '2px solid rgba(16, 185, 129, 0.5)',
-                marginBottom: '1.5rem'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <span style={{ fontSize: '2rem' }}>🌿</span>
-                  <div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#10b981', marginBottom: '0.25rem' }}>
-                      ECO-FRIENDLY CHOICE
-                    </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                      By choosing a {vehicleType === 'bike' ? 'Bike' : 'Auto Rickshaw'}, you will save approximately{' '}
-                      <strong>
-                        {(distance * (vehicleType === 'bike' ? 0.12 : 0.08)).toFixed(2)} kg
-                      </strong>{' '}
-                      of CO₂ emissions compared to an SUV!
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            )}
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <Button
+                variant="primary"
+                onClick={book}
+                disabled={loading}
+                style={{ flex: 2, padding: '0.85rem' }}
+              >
+                {loading ? 'Booking...' : 'Book Ride'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={estimate}
+                disabled={loading}
+                style={{ flex: 1, padding: '0.85rem' }}
+              >
+                Reset
+              </Button>
+            </div>
           </>
         )}
+      </Card>
 
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <Button
-            variant="primary"
-            onClick={estimate}
-            disabled={loading || !pickup.lat || !drop.lat}
-          >
-            <FiDollarSign /> Estimate Fare
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={book}
-            disabled={loading || !pickup.lat || !drop.lat}
-          >
-            <FiNavigation /> Book Ride
-          </Button>
+      {/* Right Column: Live Map Container */}
+      <Card style={{ margin: 0, padding: '1rem', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '520px' }}>
+        <div style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <FiMapPin style={{ color: 'var(--primary)' }} /> Live Map Routing
+        </div>
+        <div style={{ flex: 1, borderRadius: 'var(--border-radius)', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative', height: '100%', minHeight: '460px' }}>
+          <Map
+            center={mapCenter}
+            zoom={13}
+            markers={markers}
+            height={460}
+            onMapClick={handleMapClick}
+          />
         </div>
       </Card>
 
@@ -467,8 +412,8 @@ export default function RideBooking() {
         }}
         title="Ride Booked Successfully! 🎉"
       >
-        <div className="modal-body" style={{ padding: '2rem', textAlign: 'center' }}>
-          <div style={{ marginBottom: '2rem' }}>
+        <div className="modal-body" style={{ padding: '1.5rem', textAlign: 'center' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
             <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
               Your Ride ID
             </div>
@@ -478,54 +423,21 @@ export default function RideBooking() {
           </div>
 
           <div style={{ 
-            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(236, 72, 153, 0.15))',
-            padding: '1.5rem',
+            background: 'var(--bg-tertiary)',
+            padding: '1.25rem',
             borderRadius: '0.75rem',
-            marginBottom: '1.5rem',
+            marginBottom: '1.25rem',
             border: '2px solid var(--primary)'
           }}>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Pickup OTP
             </div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary-light)', letterSpacing: '0.2em' }}>
+            <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.2em' }}>
               {rideOtp.pickup_otp}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
               Share this code with your driver
             </div>
-          </div>
-
-          {rideOtp.drop_otp && (
-            <div style={{ 
-              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15))',
-              padding: '1rem',
-              borderRadius: '0.75rem',
-              marginBottom: '1.5rem',
-              border: '1px solid rgba(168, 85, 247, 0.3)'
-            }}>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Drop OTP
-              </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.2em' }}>
-                {rideOtp.drop_otp}
-              </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
-                Used to confirm delivery
-              </div>
-            </div>
-          )}
-
-          <div style={{ 
-            background: 'rgba(59, 130, 246, 0.1)',
-            padding: '1rem',
-            borderRadius: '0.5rem',
-            marginBottom: '1.5rem',
-            fontSize: '0.85rem',
-            color: 'var(--text-secondary)',
-            lineHeight: '1.5'
-          }}>
-            <strong>⏱️ Driver will arrive soon</strong><br/>
-            Keep your OTP handy and share it when the driver arrives. You can also track your ride in real-time.
           </div>
 
           <Button
@@ -542,6 +454,6 @@ export default function RideBooking() {
           </Button>
         </div>
       </Modal>
-    </>
+    </div>
   );
 }
