@@ -1269,4 +1269,75 @@ textarea {
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
 
+.vehicle-selector-list-horizontal {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.vehicle-card-horizontal {
+  flex: 0 0 130px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.85rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.vehicle-card-horizontal:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+}
+
+.vehicle-card-horizontal.active {
+  background: var(--bg-secondary);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-glow);
+}
+
+.vehicle-card-horizontal-icon {
+  font-size: 2.2rem;
+  margin-bottom: 0.4rem;
+}
+
+.vehicle-card-horizontal-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.vehicle-card-horizontal-price {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--primary);
+  margin-top: 0.25rem;
+}
+
+.vehicle-card-horizontal-btn {
+  margin-top: 0.6rem;
+  width: 100%;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  background: var(--secondary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  transition: opacity 0.2s;
+}
+
+.vehicle-card-horizontal-btn:hover {
+  opacity: 0.9;
+}
+
 

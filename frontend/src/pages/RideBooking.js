@@ -285,39 +285,32 @@ export default function RideBooking() {
             <div style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.85rem', color: 'var(--text-secondary)' }}>
               Select Vehicle Option
             </div>
-            <div className="vehicle-selector-list">
+            <div className="vehicle-selector-list-horizontal">
               {vehicleOptions.map((v) => {
                 const estPrice = getVehicleFare(v.type);
                 const isSelected = vehicleType === v.type;
-                const isRecommended = vehicleSuggestions.includes(v.type);
                 return (
                   <div
                     key={v.type}
-                    className={`vehicle-card ${isSelected ? 'active' : ''}`}
+                    className={`vehicle-card-horizontal ${isSelected ? 'active' : ''}`}
                     onClick={() => setVehicleType(v.type)}
                   >
-                    <span className="vehicle-card-icon">{v.icon}</span>
-                    <div className="vehicle-card-info">
-                      <div className="vehicle-card-title">
-                        {v.label} 
-                        <span className="capacity-badge">👤 {v.capacity}</span>
-                        {isRecommended && (
-                          <span style={{ 
-                            fontSize: '0.7rem', 
-                            color: 'var(--accent)', 
-                            background: 'rgba(16, 185, 129, 0.1)',
-                            padding: '0.1rem 0.3rem',
-                            borderRadius: '4px',
-                            fontWeight: 600,
-                            marginLeft: '0.5rem'
-                          }}>
-                            Recommended
-                          </span>
-                        )}
-                      </div>
-                      <div className="vehicle-card-desc">{v.desc}</div>
-                    </div>
-                    {estPrice && <div className="vehicle-card-price">₹{estPrice}</div>}
+                    <span className="vehicle-card-horizontal-icon">{v.icon}</span>
+                    <div className="vehicle-card-horizontal-title">{v.label}</div>
+                    {estPrice && <div className="vehicle-card-horizontal-price">₹{estPrice}</div>}
+                    <button 
+                      className="vehicle-card-horizontal-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setVehicleType(v.type);
+                      }}
+                      style={{
+                        background: isSelected ? 'var(--primary)' : 'var(--secondary)',
+                        boxShadow: isSelected ? 'var(--shadow-glow)' : 'none'
+                      }}
+                    >
+                      Book
+                    </button>
                   </div>
                 );
               })}
