@@ -5,50 +5,83 @@
 }
 
 :root {
-  /* Colors */
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
-  --primary-light: #818cf8;
-  --secondary: #ec4899;
-  --accent: #10b981;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --success: #10b981;
-  
-  /* Backgrounds */
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  --bg-card: rgba(30, 41, 59, 0.8);
-  --bg-glass: rgba(255, 255, 255, 0.05);
-  
-  /* Text */
-  --text-primary: #f1f5f9;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  
-  /* Borders */
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border-radius: 12px;
-  --border-radius-lg: 16px;
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
-  
-  /* Spacing */
+  /* Common Spacing & Transitions */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
   --spacing-md: 1rem;
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
   --spacing-2xl: 3rem;
-  
-  /* Transitions */
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --border-radius: 12px;
+  --border-radius-lg: 16px;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Light Theme Variables (Default / Creamy Ivory Reference Layout) */
+body, body.light-theme {
+  --bg-primary: #faf6ec;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f4eee0;
+  --bg-card: #ffffff;
+  --bg-glass: rgba(15, 23, 42, 0.04);
+  
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  
+  --border-color: #e8e2d5;
+  
+  --primary: #0f4c9c;
+  --primary-dark: #0b3c7e;
+  --primary-light: #3b82f6;
+  
+  --secondary: #c08a78;
+  --accent: #a37264;
+  --danger: #dc2626;
+  --warning: #d97706;
+  --success: #16a34a;
+  
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.12);
+  --shadow-glow: 0 0 20px rgba(15, 76, 156, 0.18);
+  
+  --btn-primary-shadow: rgba(15, 76, 156, 0.35);
+  --btn-secondary-shadow: rgba(192, 138, 120, 0.35);
+}
+
+/* Dark Theme Variables (Slate Teal / Cyan Reference Layout) */
+body.dark-theme {
+  --bg-primary: #0c151c;
+  --bg-secondary: #111d26;
+  --bg-tertiary: #172834;
+  --bg-card: #111d26;
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  
+  --text-primary: #ffffff;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  
+  --border-color: rgba(0, 240, 181, 0.15);
+  
+  --primary: #00f0b5;
+  --primary-dark: #00b88b;
+  --primary-light: #70ffdb;
+  
+  --secondary: #ff9e2b;
+  --accent: #e07f0f;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --success: #00f0b5;
+  
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.35);
+  --shadow-glow: 0 0 20px rgba(0, 240, 181, 0.45);
+  
+  --btn-primary-shadow: rgba(0, 240, 181, 0.4);
+  --btn-secondary-shadow: rgba(255, 158, 43, 0.4);
 }
 
 body {
@@ -100,8 +133,7 @@ textarea {
 
 /* App Container */
 .app {
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
   padding: var(--spacing-lg);
   min-height: calc(100vh - 80px);
 }
@@ -197,12 +229,12 @@ textarea {
 .btn-primary {
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.45);
 }
 
 .btn-primary:active {
@@ -210,14 +242,14 @@ textarea {
 }
 
 .btn-secondary {
-  background: linear-gradient(135deg, var(--secondary), #db2777);
+  background: linear-gradient(135deg, var(--secondary), #047857);
   color: white;
-  box-shadow: 0 4px 14px rgba(236, 72, 153, 0.4);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
 }
 
 .btn-secondary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.5);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
 }
 
 .btn-outline {

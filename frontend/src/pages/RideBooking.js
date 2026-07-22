@@ -324,8 +324,8 @@ export default function RideBooking() {
             </div>
 
             <Card style={{ 
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(236, 72, 153, 0.12))',
-              border: '1px solid var(--primary)',
+              background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary))',
+              border: '1px solid var(--border-color)',
               marginBottom: '1.5rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>

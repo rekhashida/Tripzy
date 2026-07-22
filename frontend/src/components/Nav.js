@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { 
   FiHome, 
   FiNavigation, 
@@ -20,9 +21,25 @@ import Input from './Input';
 import Button from './Button';
 import api from '../services/api';
 
+const WingedTaxiLogo = () => (
+  <svg width="34" height="28" viewBox="0 0 34 28" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '0.6rem' }}>
+    {/* Wings */}
+    <path d="M4 14C8 9 14 7 20 8M2 18C7 14 13 13 18 14" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" />
+    {/* Taxi Body */}
+    <path d="M12 15C12 12.5 13.5 12 15 12H23C24.5 12 26 12.5 26 15L28 17.5C29 18.5 29 19.5 29 20H11L12 15Z" fill="var(--primary)" />
+    {/* Taxi Wheels */}
+    <circle cx="15.5" cy="21.5" r="2.5" fill="var(--text-primary)" stroke="var(--primary)" strokeWidth="1.5" />
+    <circle cx="24.5" cy="21.5" r="2.5" fill="var(--text-primary)" stroke="var(--primary)" strokeWidth="1.5" />
+    {/* Cabin Windows */}
+    <path d="M16 14.5L19 14.5L19 12.5L17.5 12.5L16 14.5Z" fill="var(--bg-secondary)" />
+    <path d="M20.5 14.5L23.5 14.5L22 12.5L20.5 12.5V14.5Z" fill="var(--bg-secondary)" />
+  </svg>
+);
+
 export default function Nav() {
   const { user, logout, fetchProfile } = useAuth();
   const { lang, changeLanguage, t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
   const [showTopupModal, setShowTopupModal] = useState(false);
@@ -66,7 +83,7 @@ export default function Nav() {
     <>
       <nav className="nav">
         <div className="brand">
-          <FiNavigation style={{ fontSize: '1.5rem' }} />
+          <WingedTaxiLogo />
           <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>Tripzy</NavLink>
         </div>
         
@@ -113,13 +130,13 @@ export default function Nav() {
                     display: 'flex', 
                     alignItems: 'center', 
                     gap: '0.4rem', 
-                    background: 'rgba(99, 102, 241, 0.15)', 
+                    background: 'var(--bg-glass)', 
                     padding: '0.4rem 0.8rem', 
                     borderRadius: '20px', 
                     border: '1px solid var(--primary)', 
                     fontSize: '0.9rem',
                     fontWeight: '600',
-                    color: '#818cf8',
+                    color: 'var(--primary)',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease-in-out'
                   }} 
@@ -180,6 +197,28 @@ export default function Nav() {
             <option value="en">English 🇬🇧</option>
             <option value="hi">हिन्दी 🇮🇳</option>
             <option value="gu">ગુજરાતી 🇮🇳</option>
+          </select>
+
+          {/* Theme Selector Dropdown */}
+          <select 
+            value={theme} 
+            onChange={(e) => setTheme(e.target.value)}
+            style={{
+              background: 'var(--bg-tertiary, #1f1f2e)',
+              color: 'var(--text-primary, #ffffff)',
+              border: '1px solid var(--border-color, #2f2f3f)',
+              padding: '0.3rem 0.6rem',
+              borderRadius: '6px',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              outline: 'none',
+              marginLeft: '0.75rem',
+              fontWeight: 500
+            }}
+          >
+            <option value="light">☀️ {t('light') || 'Light'}</option>
+            <option value="dark">🌙 {t('dark') || 'Dark'}</option>
+            <option value="system">🖥️ {t('system') || 'System'}</option>
           </select>
         </div>
       </nav>
