@@ -10,10 +10,27 @@ import Button from '../components/Button';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
 
+const VEHICLE_MULTIPLIERS = {
+  bike: 0.6,
+  auto: 0.8,
+  hatchback: 0.9,
+  sedan: 1.0,
+  suv: 1.3,
+};
+
+const vehicleOptions = [
+  { type: 'bike', label: 'Bike', icon: '🏍️', desc: 'Quick single rider trip', capacity: 1 },
+  { type: 'auto', label: 'Auto Rickshaw', icon: '🛺', desc: 'Zip through city traffic', capacity: 3 },
+  { type: 'hatchback', label: 'Hatchback', icon: '🚗', desc: 'Affordable daily commutes', capacity: 4 },
+  { type: 'sedan', label: 'Sedan', icon: '🚘', desc: 'Comfortable spacious sedan', capacity: 4 },
+  { type: 'suv', label: 'SUV', icon: '🚙', desc: 'Premium rides for groups', capacity: 6 },
+];
+
 export default function RideBooking() {
   const [pickup, setPickup] = useState({ address: '', lat: null, lng: null });
   const [drop, setDrop] = useState({ address: '', lat: null, lng: null });
   const [vehicleType, setVehicleType] = useState('sedan');
+  const [estimatedVehicle, setEstimatedVehicle] = useState('sedan');
   const [luggageSize, setLuggageSize] = useState('medium');
   const [vehicleSuggestions, setVehicleSuggestions] = useState([]);
   const [fare, setFare] = useState(null);
@@ -46,6 +63,7 @@ export default function RideBooking() {
         luggage_size: luggageSize
       });
       setFare(data.fare);
+      setEstimatedVehicle(vehicleType);
       setDistance(data.distanceKm);
       setDuration(data.durationMin);
       setSurgeInfo(data.breakdown);
@@ -57,6 +75,12 @@ export default function RideBooking() {
       setMsgType('error');
     }
     setLoading(false);
+  };
+
+  const getVehicleFare = (type) => {
+    if (!fare || !estimatedVehicle) return null;
+    const baseSedan = fare / VEHICLE_MULTIPLIERS[estimatedVehicle];
+    return Math.round(baseSedan * VEHICLE_MULTIPLIERS[type]);
   };
 
   const book = async () => {
@@ -238,25 +262,7 @@ export default function RideBooking() {
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-          <Select
-            label={
-              <>
-                <FiTruck style={{ marginRight: '0.5rem' }} />
-                Vehicle Type
-              </>
-            }
-            value={vehicleType}
-            onChange={(e) => setVehicleType(e.target.value)}
-            options={[
-              { value: 'hatchback', label: 'Hatchback' },
-              { value: 'sedan', label: 'Sedan' },
-              { value: 'suv', label: 'SUV' },
-              { value: 'auto', label: 'Auto Rickshaw' },
-              { value: 'bike', label: 'Bike' }
-            ]}
-          />
-
+        <div style={{ marginBottom: '1.5rem' }}>
           <Select
             label={
               <>
@@ -274,41 +280,59 @@ export default function RideBooking() {
           />
         </div>
 
-        {vehicleSuggestions && vehicleSuggestions.length > 0 && (
-          <Card style={{ marginBottom: '1rem', padding: '0.75rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-              <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Recommended Vehicles</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Based on your luggage selection</div>
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                {vehicleSuggestions.map((v) => (
-                  <Button
-                    key={v}
-                    variant={vehicleType === v ? 'primary' : 'outline'}
-                    onClick={() => setVehicleType(v)}
-                    style={{ textTransform: 'capitalize' }}
-                  >
-                    {v === 'auto' ? 'Auto' : v}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </Card>
-        )}
-
         {fare && (
           <>
+            <div style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.85rem', color: 'var(--text-secondary)' }}>
+              Select Vehicle Option
+            </div>
+            <div className="vehicle-selector-list">
+              {vehicleOptions.map((v) => {
+                const estPrice = getVehicleFare(v.type);
+                const isSelected = vehicleType === v.type;
+                const isRecommended = vehicleSuggestions.includes(v.type);
+                return (
+                  <div
+                    key={v.type}
+                    className={`vehicle-card ${isSelected ? 'active' : ''}`}
+                    onClick={() => setVehicleType(v.type)}
+                  >
+                    <span className="vehicle-card-icon">{v.icon}</span>
+                    <div className="vehicle-card-info">
+                      <div className="vehicle-card-title">
+                        {v.label} 
+                        <span className="capacity-badge">👤 {v.capacity}</span>
+                        {isRecommended && (
+                          <span style={{ 
+                            fontSize: '0.7rem', 
+                            color: 'var(--accent)', 
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            padding: '0.1rem 0.3rem',
+                            borderRadius: '4px',
+                            fontWeight: 600,
+                            marginLeft: '0.5rem'
+                          }}>
+                            Recommended
+                          </span>
+                        )}
+                      </div>
+                      <div className="vehicle-card-desc">{v.desc}</div>
+                    </div>
+                    {estPrice && <div className="vehicle-card-price">₹{estPrice}</div>}
+                  </div>
+                );
+              })}
+            </div>
+
             <Card style={{ 
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(236, 72, 153, 0.1))',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(236, 72, 153, 0.12))',
               border: '1px solid var(--primary)',
               marginBottom: '1.5rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Fare</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Fare ({vehicleType})</div>
                   <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary-light)' }}>
-                    <FiDollarSign style={{ display: 'inline' }} /> ₹{fare}
+                    <FiDollarSign style={{ display: 'inline' }} /> ₹{getVehicleFare(vehicleType)}
                   </div>
                 </div>
                 {distance && (

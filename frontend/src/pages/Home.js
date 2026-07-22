@@ -158,6 +158,31 @@ export default function Home() {
             )}
           </div>
         </div>
+        
+        <div className="hero-illustration">
+          <div className="city-grid"></div>
+          <div className="animated-road"></div>
+          <div className="pulse-pin pickup-pin">📍</div>
+          <div className="pulse-pin dropoff-pin">🏁</div>
+          <div className="driving-car-wrapper">
+            <svg viewBox="0 0 120 60" className="animated-taxi" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="60" cy="50" rx="45" ry="6" fill="rgba(0,0,0,0.3)" />
+              <circle cx="30" cy="45" r="11" fill="#1e293b" stroke="#6366f1" strokeWidth="2" />
+              <circle cx="30" cy="45" r="5" fill="#f1f5f9" />
+              <circle cx="90" cy="45" r="11" fill="#1e293b" stroke="#6366f1" strokeWidth="2" />
+              <circle cx="90" cy="45" r="5" fill="#f1f5f9" />
+              <path d="M15 35 C15 35 15 28 25 25 C35 22 45 12 60 12 C75 12 85 22 95 25 C105 28 105 35 105 35 L108 38 C108 40 102 44 95 44 L25 44 C18 44 12 40 12 38 Z" fill="#eab308" />
+              <path d="M40 23 L60 23 L60 16 L48 16 Z" fill="#0f172a" />
+              <path d="M64 23 L80 23 L72 16 L64 16 Z" fill="#0f172a" />
+              <rect x="52" y="5" width="16" height="8" rx="2" fill="#0f172a" />
+              <rect x="55" y="7" width="10" height="4" fill="#eab308" />
+            </svg>
+          </div>
+          <div className="floating-clouds">
+            <span className="cloud cloud-1">☁️</span>
+            <span className="cloud cloud-2">☁️</span>
+          </div>
+        </div>
       </div>
 
       <Card 
