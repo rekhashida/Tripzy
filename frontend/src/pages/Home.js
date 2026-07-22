@@ -110,7 +110,7 @@ export default function Home() {
       ) : (
         <div style={{
           background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary))',
-          padding: '3rem 1.5rem',
+          padding: '3rem 2rem',
           borderRadius: 'var(--border-radius-lg)',
           border: '1px solid var(--border-color)',
           display: 'flex',
@@ -122,36 +122,41 @@ export default function Home() {
           overflow: 'hidden',
           minHeight: '520px',
           boxShadow: 'var(--shadow-xl)',
-          marginBottom: '1.5rem'
+          marginBottom: '2.5rem',
+          width: '100%'
         }}>
+          {/* Top Header Row */}
           <div style={{
             display: 'flex',
             width: '100%',
             justifyContent: 'space-between',
             alignItems: 'center',
-            maxWidth: '480px',
-            marginBottom: '1.5rem',
-            padding: '0 0.5rem'
+            maxWidth: '1000px',
+            marginBottom: '2rem',
+            padding: '0 1rem'
           }}>
-            <span style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>☰</span>
-            <span style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>🔔</span>
+            <span style={{ fontSize: '1.5rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>☰</span>
+            <span style={{ fontSize: '1.5rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>🔔</span>
           </div>
 
+          {/* Search Bar - Wide */}
           <div style={{
             width: '100%',
-            maxWidth: '480px',
+            maxWidth: '720px',
             background: 'var(--bg-primary)',
             border: '1px solid var(--border-color)',
             borderRadius: '30px',
-            padding: '0.8rem 1.2rem',
+            padding: '0.9rem 1.5rem',
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem',
             boxShadow: 'var(--shadow-md)',
-            marginBottom: '2rem',
+            marginBottom: '2.5rem',
             cursor: 'pointer'
-          }} onClick={() => navigate(user ? '/ride' : '/login')}>
-            <span style={{ color: 'var(--primary)', fontSize: '1.1rem', display: 'flex', alignItems: 'center' }}>🔍</span>
+          }} 
+          className="search-bar-hover"
+          onClick={() => navigate(user ? '/ride' : '/login')}>
+            <span style={{ color: 'var(--primary)', fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>🔍</span>
             <input 
               type="text" 
               placeholder="Where to?" 
@@ -161,28 +166,28 @@ export default function Home() {
                 background: 'transparent',
                 outline: 'none',
                 width: '100%',
-                fontSize: '1rem',
+                fontSize: '1.1rem',
                 color: 'var(--text-primary)',
                 cursor: 'pointer'
               }}
             />
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>✖</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>✖</span>
           </div>
 
+          {/* Winding Road Illustration - Stretched Wide */}
           <div style={{
             width: '100%',
-            maxWidth: '480px',
-            height: '220px',
+            maxWidth: '1000px',
+            height: '240px',
             position: 'relative',
             overflow: 'hidden',
             background: 'linear-gradient(180deg, #bae6fd, #e0f2fe)',
             borderRadius: 'var(--border-radius-lg)',
             border: '1px solid var(--border-color)',
-            marginBottom: '2rem',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-end'
+            marginBottom: '2.5rem',
+            boxShadow: 'var(--shadow-lg)'
           }}>
+            {/* Skyline */}
             <div style={{
               position: 'absolute',
               top: '20px',
@@ -195,34 +200,38 @@ export default function Home() {
               justifyContent: 'space-around',
               opacity: 0.8
             }}>
-              <div style={{ width: '30px', height: '60px', background: '#94a3b8', borderRadius: '4px 4px 0 0' }} />
               <div style={{ width: '40px', height: '80px', background: '#cbd5e1', borderRadius: '6px 6px 0 0' }} />
-              <div style={{ width: '25px', height: '50px', background: '#94a3b8', borderRadius: '3px 3px 0 0' }} />
-              <div style={{ width: '35px', height: '70px', background: '#cbd5e1', borderRadius: '5px 5px 0 0' }} />
+              <div style={{ width: '30px', height: '60px', background: '#94a3b8', borderRadius: '4px 4px 0 0' }} />
+              <div style={{ width: '50px', height: '100px', background: '#cbd5e1', borderRadius: '6px 6px 0 0' }} />
+              <div style={{ width: '35px', height: '70px', background: '#94a3b8', borderRadius: '5px 5px 0 0' }} />
+              <div style={{ width: '45px', height: '90px', background: '#cbd5e1', borderRadius: '6px 6px 0 0' }} />
             </div>
 
-            <span style={{ position: 'absolute', top: '15px', left: '15%', fontSize: '1.5rem', opacity: 0.7 }}>☁️</span>
-            <span style={{ position: 'absolute', top: '25px', right: '20%', fontSize: '1.2rem', opacity: 0.6 }}>☁️</span>
+            {/* Clouds */}
+            <span className="cloud cloud-1" style={{ position: 'absolute', top: '15px', left: '10%', fontSize: '1.8rem', opacity: 0.8 }}>☁️</span>
+            <span className="cloud cloud-2" style={{ position: 'absolute', top: '25px', right: '15%', fontSize: '1.5rem', opacity: 0.7 }}>☁️</span>
 
-            <svg viewBox="0 0 400 120" style={{ width: '100%', height: '110px', zIndex: 2 }}>
-              <path d="M-10 120 Q50 60 150 120 Q250 50 410 120 Z" fill="#4ade80" opacity="0.9" />
-              <path d="M-10 120 Q100 80 250 120 Q350 70 410 120 Z" fill="#22c55e" />
-              <path d="M-20 120 C 100 80, 200 40, 300 70 C 350 80, 380 120, 420 120" fill="none" stroke="#475569" strokeWidth="32" strokeLinecap="round" />
-              <path d="M-20 120 C 100 80, 200 40, 300 70 C 350 80, 380 120, 420 120" fill="none" stroke="#ffffff" strokeWidth="2" strokeDasharray="8 8" strokeLinecap="round" opacity="0.6" />
+            {/* Winding road SVG */}
+            <svg viewBox="0 0 1000 120" style={{ width: '100%', height: '120px', position: 'absolute', bottom: 0, left: 0, zIndex: 2 }}>
+              <path d="M-10 120 Q200 50 500 120 Q800 40 1010 120 Z" fill="#4ade80" opacity="0.9" />
+              <path d="M-10 120 Q250 80 600 120 Q850 60 1010 120 Z" fill="#22c55e" />
+              <path d="M-20 120 C 250 80, 500 40, 750 70 C 850 80, 920 120, 1020 120" fill="none" stroke="#475569" strokeWidth="36" strokeLinecap="round" />
+              <path d="M-20 120 C 250 80, 500 40, 750 70 C 850 80, 920 120, 1020 120" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeDasharray="10 10" strokeLinecap="round" opacity="0.7" />
               
-              <g transform="translate(60, 85) scale(0.4)">
+              {/* Animated taxis */}
+              <g transform="translate(150, 65) scale(0.55)">
                 <rect x="0" y="10" width="40" height="15" rx="4" fill="#eab308" />
                 <rect x="8" y="2" width="24" height="10" rx="3" fill="#1e293b" />
                 <circle cx="10" cy="23" r="5" fill="#000" />
                 <circle cx="30" cy="23" r="5" fill="#000" />
               </g>
-              <g transform="translate(180, 50) scale(0.35)">
+              <g transform="translate(480, 42) scale(0.5)">
                 <rect x="0" y="10" width="40" height="15" rx="4" fill="#eab308" />
                 <rect x="8" y="2" width="24" height="10" rx="3" fill="#1e293b" />
                 <circle cx="10" cy="23" r="5" fill="#000" />
                 <circle cx="30" cy="23" r="5" fill="#000" />
               </g>
-              <g transform="translate(290, 68) scale(0.4)">
+              <g transform="translate(790, 58) scale(0.55)">
                 <rect x="0" y="10" width="40" height="15" rx="4" fill="#eab308" />
                 <rect x="8" y="2" width="24" height="10" rx="3" fill="#1e293b" />
                 <circle cx="10" cy="23" r="5" fill="#000" />
@@ -231,24 +240,26 @@ export default function Home() {
             </svg>
           </div>
 
+          {/* Centered Brand Title */}
           <h1 style={{
-            fontSize: '2.5rem',
+            fontSize: '3.5rem',
             fontWeight: '900',
             color: 'var(--primary)',
             fontFamily: 'Outfit, sans-serif',
             letterSpacing: '1px',
-            marginBottom: '2rem'
+            marginBottom: '2.5rem'
           }}>
             Tripzy
           </h1>
 
+          {/* Action Grid - 3 Columns (Ride, Package, Ride Sharing) */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '1.25rem',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: '2rem',
             width: '100%',
-            maxWidth: '480px',
-            marginBottom: '1rem'
+            maxWidth: '1000px',
+            marginBottom: '1.5rem'
           }}>
             <div 
               onClick={() => navigate(user ? '/ride' : '/login')}
@@ -256,7 +267,7 @@ export default function Home() {
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)',
                 borderRadius: 'var(--border-radius-lg)',
-                padding: '1.25rem 0.75rem',
+                padding: '2rem 1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -268,21 +279,22 @@ export default function Home() {
               className="action-card-btn"
             >
               <div style={{
-                width: '54px',
-                height: '54px',
-                borderRadius: '14px',
+                width: '64px',
+                height: '64px',
+                borderRadius: '18px',
                 background: 'var(--secondary)',
                 opacity: 0.95,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.6rem',
-                marginBottom: '0.6rem',
+                fontSize: '2rem',
+                marginBottom: '1rem',
                 color: '#fff'
               }}>
                 🚗
               </div>
-              <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-primary)' }}>Ride</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)' }}>Ride</div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Book a private ride instantly</p>
             </div>
 
             <div 
@@ -291,7 +303,7 @@ export default function Home() {
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)',
                 borderRadius: 'var(--border-radius-lg)',
-                padding: '1.25rem 0.75rem',
+                padding: '2rem 1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -303,21 +315,22 @@ export default function Home() {
               className="action-card-btn"
             >
               <div style={{
-                width: '54px',
-                height: '54px',
-                borderRadius: '14px',
+                width: '64px',
+                height: '64px',
+                borderRadius: '18px',
                 background: 'var(--secondary)',
                 opacity: 0.95,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.6rem',
-                marginBottom: '0.6rem',
+                fontSize: '2rem',
+                marginBottom: '1rem',
                 color: '#fff'
               }}>
                 📦
               </div>
-              <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-primary)' }}>Package</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)' }}>Package</div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Send and track couriers safely</p>
             </div>
 
             <div 
@@ -326,7 +339,7 @@ export default function Home() {
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)',
                 borderRadius: 'var(--border-radius-lg)',
-                padding: '1.25rem 0.75rem',
+                padding: '2rem 1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -338,21 +351,22 @@ export default function Home() {
               className="action-card-btn"
             >
               <div style={{
-                width: '54px',
-                height: '54px',
-                borderRadius: '14px',
+                width: '64px',
+                height: '64px',
+                borderRadius: '18px',
                 background: 'var(--secondary)',
                 opacity: 0.95,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.6rem',
-                marginBottom: '0.6rem',
+                fontSize: '2rem',
+                marginBottom: '1rem',
                 color: '#fff'
               }}>
-                🛺
+                👥
               </div>
-              <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-primary)' }}>Rentals</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)' }}>Ride Sharing</div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Join pools and share expenses</p>
             </div>
           </div>
         </div>

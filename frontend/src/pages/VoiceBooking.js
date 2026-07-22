@@ -1,11 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiMic, FiMicOff, FiNavigation, FiMapPin, FiCheckCircle } from 'react-icons/fi';
+import { FiMic, FiMicOff, FiNavigation, FiMapPin, FiCheckCircle, FiPackage, FiClock } from 'react-icons/fi';
 import api from '../services/api';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Map, { MapAutocomplete } from '../components/Map';
 import { useLanguage } from '../context/LanguageContext';
+import Modal from '../components/Modal';
+
+const VEHICLE_MULTIPLIERS = {
+  bike: 0.4,
+  auto: 0.6,
+  sedan: 1.0,
+  suv: 1.4
+};
+
+const vehicleOptions = [
+  { type: 'bike', label: 'Moto (Bike)', icon: '🏍️', capacity: 1, desc: 'Quick solo trips' },
+  { type: 'auto', label: 'Auto Rickshaw', icon: '🛺', capacity: 3, desc: 'Eco friendly & cheap' },
+  { type: 'sedan', label: 'Sedan', icon: '🚗', capacity: 4, desc: 'Comfortable every day' },
+  { type: 'suv', label: 'SUV', icon: '🚙', capacity: 6, desc: 'Spacious premium rides' }
+];
 
 export default function VoiceBooking() {
   const { lang, t } = useLanguage();
@@ -18,10 +33,17 @@ export default function VoiceBooking() {
   const [pickup, setPickup] = useState({ address: '', lat: null, lng: null });
   const [drop, setDrop] = useState({ address: '', lat: null, lng: null });
 
+  const [vehicleType, setVehicleType] = useState('sedan');
+  const [fare, setFare] = useState(null);
+  const [estimatedVehicle, setEstimatedVehicle] = useState('sedan');
+  const [distance, setDistance] = useState(null);
+  const [duration, setDuration] = useState(null);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [rideOtp, setRideOtp] = useState({ rideId: null, pickup_otp: null });
+
   const recognitionRef = useRef(null);
   const navigate = useNavigate();
 
-  // Re-initialize speech recognition language when platform language changes
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -30,11 +52,9 @@ export default function VoiceBooking() {
       return;
     }
     recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = false; // Auto-stops when user finishes speaking single sentence
+    recognitionRef.current.continuous = false;
     recognitionRef.current.interimResults = false;
     recognitionRef.current.maxAlternatives = 1;
-    
-    // Set dynamic language code
     recognitionRef.current.lang = lang === 'hi' ? 'hi-IN' : lang === 'gu' ? 'gu-IN' : 'en-IN';
     
     recognitionRef.current.onresult = (e) => {
@@ -42,15 +62,12 @@ export default function VoiceBooking() {
         const finalTranscript = e.results[0][0].transcript.trim();
         setTranscript(finalTranscript);
         setListening(false);
-        // Automatically trigger robust parsing on speech detection completion!
         autoParseVoice(finalTranscript);
       }
     };
 
     recognitionRef.current.onspeechend = () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
+      if (recognitionRef.current) recognitionRef.current.stop();
       setListening(false);
     };
 
@@ -75,6 +92,7 @@ export default function VoiceBooking() {
     setTranscript('');
     setPickup({ address: '', lat: null, lng: null });
     setDrop({ address: '', lat: null, lng: null });
+    setFare(null);
     setMsg(
       lang === 'hi' 
         ? 'सुन रहा हूँ... अपना मार्ग बोलें (जैसे, "गोत्री से वृन्दावन")' 
@@ -88,13 +106,48 @@ export default function VoiceBooking() {
   };
 
   const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
+    if (recognitionRef.current) recognitionRef.current.stop();
     setListening(false);
   };
 
-  // Robust geocoding and parsing method
+  const estimateVoiceFare = async (pLoc, dLoc) => {
+    setLoading(true);
+    try {
+      const { data } = await api.post('/rides/estimate', {
+        pickup_lat: pLoc.lat,
+        pickup_lng: pLoc.lng,
+        drop_lat: dLoc.lat,
+        drop_lng: dLoc.lng,
+        vehicle_type: vehicleType,
+        luggage_size: 'small'
+      });
+      setFare(data.fare);
+      setEstimatedVehicle(vehicleType);
+      setDistance(data.distanceKm);
+      setDuration(data.durationMin);
+      setMsg(
+        lang === 'hi'
+          ? `किराया अनुमानित: ₹${data.fare} | दूरी: ${data.distanceKm} किमी`
+          : lang === 'gu'
+            ? `અંદાજિત ભાડું: ₹${data.fare} | અંતર: ${data.distanceKm} કિમી`
+            : `Estimated fare: ₹${data.fare} | Distance: ${data.distanceKm} km | Duration: ~${data.durationMin} min`
+      );
+      setMsgType('success');
+    } catch (e) {
+      console.error(e);
+      setMsg('Failed to estimate fare for resolved locations.');
+      setMsgType('error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getVehicleFare = (type) => {
+    if (!fare || !estimatedVehicle) return null;
+    const baseSedan = fare / VEHICLE_MULTIPLIERS[estimatedVehicle];
+    return Math.round(baseSedan * VEHICLE_MULTIPLIERS[type]);
+  };
+
   const autoParseVoice = async (textToParse) => {
     if (!textToParse) return;
     setLoading(true);
@@ -104,10 +157,8 @@ export default function VoiceBooking() {
     let rawPickup = '';
     let rawDrop = '';
 
-    // Normalize input to strip initial keywords (e.g. "go from", "book ride from", "please from")
     const normalized = textToParse.replace(/^(go|book|ride|please|from|take me from|सवारी बुक करें|બુક કરો)\s+/i, '').trim();
 
-    // 1. Language-specific regex parsing
     if (lang === 'hi') {
       const match = normalized.match(/(.+?)\s*से\s+(.+?)(?:\s*तक)?$/i);
       if (match) {
@@ -128,7 +179,6 @@ export default function VoiceBooking() {
       }
     }
 
-    // 2. Fallback: Split by common prepositions across all languages
     if (!rawPickup || !rawDrop) {
       const parts = normalized.split(/\s+(?:to|से|થી|—|-)\s+/i);
       if (parts.length === 2) {
@@ -151,12 +201,10 @@ export default function VoiceBooking() {
     }
 
     try {
-      // Fetch coordinates for pickup location (bias to Vadodara)
       const pUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawPickup + ' Vadodara')}&limit=1&countrycodes=in&viewbox=72.8,22.5,73.6,22.1&bounded=0`;
       const pRes = await fetch(pUrl);
       const pData = await pRes.json();
 
-      // Fetch coordinates for dropoff location (bias to Vadodara)
       const dUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawDrop + ' Vadodara')}&limit=1&countrycodes=in&viewbox=72.8,22.5,73.6,22.1&bounded=0`;
       const dRes = await fetch(dUrl);
       const dData = await dRes.json();
@@ -164,7 +212,6 @@ export default function VoiceBooking() {
       let finalP = pData[0];
       let finalD = dData[0];
 
-      // Geocode fallback without "Vadodara" bias for broader India queries
       if (!finalP) {
         const pFallbackRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawPickup)}&limit=1&countrycodes=in`);
         const pFallbackData = await pFallbackRes.json();
@@ -205,20 +252,11 @@ export default function VoiceBooking() {
 
       setPickup(newPickup);
       setDrop(newDrop);
-
-      setMsg(
-        lang === 'hi'
-          ? `स्थान प्राप्त हुए! कृपया नीचे विवरण की पुष्टि करें।\n• पिकअप: ${newPickup.address}\n• ड्रॉप: ${newDrop.address}`
-          : lang === 'gu'
-            ? `સ્થાન મળ્યા! કૃપા કરીને નીચે વિગતોની પુષ્ટિ કરો.\n• પીકઅપ: ${newPickup.address}\n• ડ્રોપ: ${newDrop.address}`
-            : `Locations resolved successfully! Please confirm the details below.\n• Pickup: ${newPickup.address}\n• Dropoff: ${newDrop.address}`
-      );
-      setMsgType('success');
+      await estimateVoiceFare(newPickup, newDrop);
     } catch (err) {
       console.error(err);
       setMsg(lang === 'hi' ? 'स्थान खोजना विफल रहा। कृपया स्वयं लिखें।' : lang === 'gu' ? 'સ્થાન શોધવામાં નિષ્ફળતા. કૃપા કરીને જાતે લખો.' : 'Failed to fetch location data. Please input addresses manually.');
       setMsgType('error');
-    } finally {
       setLoading(false);
     }
   };
@@ -239,14 +277,12 @@ export default function VoiceBooking() {
         drop_lng: drop.lng,
         pickup_address: pickup.address || 'Voice Booking Pickup',
         drop_address: drop.address || 'Voice Booking Dropoff',
-        vehicle_type: 'sedan',
+        vehicle_type: vehicleType,
+        luggage_size: 'small',
         is_pooling: false
       });
-      setMsg(lang === 'hi' ? `सवारी सफलतापूर्वक बुक की गई! आईडी: ${data.rideId}` : lang === 'gu' ? `રાઇડ સફળતાપૂર્વક બુક થઈ ગઈ! આઈડી: ${data.rideId}` : `Ride booked successfully! Ride ID: ${data.rideId}. Pickup OTP: ${data.pickup_otp}`);
-      setMsgType('success');
-      setTimeout(() => {
-        navigate(`/tracking/${data.rideId}`);
-      }, 2000);
+      setRideOtp({ rideId: data.rideId, pickup_otp: data.pickup_otp });
+      setShowOtpModal(true);
     } catch (e) {
       setMsg(e.response?.data?.error || 'Booking failed. Please try again.');
       setMsgType('error');
@@ -255,7 +291,7 @@ export default function VoiceBooking() {
     }
   };
 
-  const mapCenter = pickup.lat ? pickup : { lat: 22.3072, lng: 73.1812 }; // Default Vadodara
+  const mapCenter = pickup.lat ? pickup : { lat: 22.3072, lng: 73.1812 };
   const markers = [];
   if (pickup.lat) markers.push({ lat: pickup.lat, lng: pickup.lng, title: 'Pickup' });
   if (drop.lat) markers.push({ lat: drop.lat, lng: drop.lng, title: 'Dropoff' });
@@ -322,7 +358,7 @@ export default function VoiceBooking() {
           <h3 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: 600 }}>
             {t('voice_verify')}
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
             <div>
               <label className="form-label">
                 <FiMapPin style={{ marginRight: '0.5rem' }} /> {t('pickup')}
@@ -346,12 +382,70 @@ export default function VoiceBooking() {
           </div>
         </div>
 
+        {fare && (
+          <>
+            <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
+              Select Vehicle Option
+            </div>
+            <div className="vehicle-selector-list-horizontal" style={{ marginBottom: '1.5rem' }}>
+              {vehicleOptions.map((v) => {
+                const estPrice = getVehicleFare(v.type);
+                const isSelected = vehicleType === v.type;
+                return (
+                  <div
+                    key={v.type}
+                    className={`vehicle-card-horizontal ${isSelected ? 'active' : ''}`}
+                    onClick={() => setVehicleType(v.type)}
+                  >
+                    <span className="vehicle-card-horizontal-icon">{v.icon}</span>
+                    <div className="vehicle-card-horizontal-title">{v.label}</div>
+                    {estPrice && <div className="vehicle-card-horizontal-price">₹{estPrice}</div>}
+                    <button 
+                      className="vehicle-card-horizontal-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setVehicleType(v.type);
+                      }}
+                      style={{
+                        background: isSelected ? 'var(--primary)' : 'var(--secondary)',
+                        boxShadow: isSelected ? 'var(--shadow-glow)' : 'none'
+                      }}
+                    >
+                      Book
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <Card style={{ 
+              background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary))',
+              border: '1px solid var(--border-color)',
+              marginBottom: '1.5rem',
+              padding: '0.85rem'
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Estimated Fare</span>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>₹{getVehicleFare(vehicleType)}</span>
+                </div>
+                {distance && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Distance</span>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>{distance} km</span>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </>
+        )}
+
         <Button
           variant="primary"
           onClick={parseAndBook}
           disabled={loading || !pickup.lat || !drop.lat}
           className="w-full"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.85rem' }}
         >
           <FiCheckCircle /> {t('voice_book_now')}
         </Button>
@@ -371,6 +465,59 @@ export default function VoiceBooking() {
           />
         </Card>
       )}
+
+      <Modal
+        isOpen={showOtpModal}
+        onClose={() => {
+          setShowOtpModal(false);
+          if (rideOtp.rideId) {
+            navigate(`/tracking/${rideOtp.rideId}`);
+          }
+        }}
+        title="Ride Booked Successfully! 🎉"
+      >
+        <div className="modal-body" style={{ padding: '1.5rem', textAlign: 'center' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+              Your Ride ID
+            </div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary)' }}>
+              {rideOtp.rideId}
+            </div>
+          </div>
+
+          <div style={{ 
+            background: 'var(--bg-tertiary)',
+            padding: '1.25rem',
+            borderRadius: '0.75rem',
+            marginBottom: '1.25rem',
+            border: '2px solid var(--primary)'
+          }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Pickup OTP
+            </div>
+            <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.2em' }}>
+              {rideOtp.pickup_otp}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+              Share this code with your driver
+            </div>
+          </div>
+
+          <Button
+            variant="primary"
+            onClick={() => {
+              setShowOtpModal(false);
+              if (rideOtp.rideId) {
+                navigate(`/tracking/${rideOtp.rideId}`);
+              }
+            }}
+            style={{ width: '100%' }}
+          >
+            <FiNavigation /> Track Your Ride
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

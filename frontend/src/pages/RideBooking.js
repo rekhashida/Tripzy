@@ -200,14 +200,23 @@ export default function RideBooking() {
     : { lat: 23.0225, lng: 72.5714 };
 
   return (
-    <div className="ride-booking-grid">
-      {/* Left Column: Input Form & Vehicle Options Card */}
-      <Card style={{ margin: 0 }}>
-        <h1 className="card-title">
+    <div className="full-screen-map-layout">
+      {/* Background Live Map */}
+      <Map
+        center={mapCenter}
+        zoom={13}
+        markers={markers}
+        height="100%"
+        onMapClick={handleMapClick}
+      />
+
+      {/* Floating Left Control Panel */}
+      <div className="floating-booking-panel">
+        <h1 className="card-title" style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>
           <FiNavigation style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
           Book a Ride
         </h1>
-        <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Select your locations and details</p>
+        <p className="card-subtitle" style={{ marginBottom: '1.25rem' }}>Select your locations and details</p>
 
         {msg && (
           <div className={`alert alert-${msgType === 'success' ? 'success' : msgType === 'error' ? 'error' : 'info'}`} style={{ marginBottom: '1.25rem' }}>
@@ -215,10 +224,10 @@ export default function RideBooking() {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.25rem' }}>
           <div>
-            <label className="form-label">
-              <FiMapPin style={{ marginRight: '0.5rem' }} />
+            <label className="form-label" style={{ fontSize: '0.85rem' }}>
+              <FiMapPin style={{ marginRight: '0.35rem' }} />
               Pickup Location
             </label>
             <MapAutocomplete
@@ -227,16 +236,11 @@ export default function RideBooking() {
               placeholder="Search pickup location..."
               value={pickup.address}
             />
-            {pickup.lat && (
-              <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Lat: {pickup.lat.toFixed(6)}, Lng: {pickup.lng.toFixed(6)}
-              </div>
-            )}
           </div>
 
           <div>
-            <label className="form-label">
-              <FiMapPin style={{ marginRight: '0.5rem' }} />
+            <label className="form-label" style={{ fontSize: '0.85rem' }}>
+              <FiMapPin style={{ marginRight: '0.35rem' }} />
               Drop Location
             </label>
             <MapAutocomplete
@@ -245,18 +249,13 @@ export default function RideBooking() {
               placeholder="Search drop location..."
               value={drop.address}
             />
-            {drop.lat && (
-              <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Lat: {drop.lat.toFixed(6)}, Lng: {drop.lng.toFixed(6)}
-              </div>
-            )}
           </div>
 
           <div>
             <Select
               label={
                 <>
-                  <FiPackage style={{ marginRight: '0.5rem' }} />
+                  <FiPackage style={{ marginRight: '0.35rem' }} />
                   Luggage Size
                 </>
               }
@@ -276,13 +275,13 @@ export default function RideBooking() {
             variant="primary"
             onClick={estimate}
             disabled={loading}
-            style={{ width: '100%', padding: '0.85rem' }}
+            style={{ width: '100%', padding: '0.75rem' }}
           >
             {loading ? 'Estimating...' : 'Estimate Fare'}
           </Button>
         ) : (
           <>
-            <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
+            <div style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
               Select Vehicle Option
             </div>
             <div className="vehicle-selector-list-horizontal">
@@ -319,57 +318,36 @@ export default function RideBooking() {
             <Card style={{ 
               background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary))',
               border: '1px solid var(--border-color)',
-              marginBottom: '1.25rem',
-              padding: '0.85rem'
+              marginBottom: '1rem',
+              padding: '0.75rem',
+              marginTop: '0.5rem'
             }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Estimated Fare</span>
-                  <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>₹{getVehicleFare(vehicleType)}</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Estimated Fare</span>
+                  <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--primary)' }}>₹{getVehicleFare(vehicleType)}</span>
                 </div>
                 {distance && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Distance</span>
-                    <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>{distance} km</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Distance</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{distance} km</span>
                   </div>
                 )}
                 {duration && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Duration</span>
-                    <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>{duration} min</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Duration</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{duration} min</span>
                   </div>
                 )}
               </div>
             </Card>
 
-            {surgeInfo && surgeInfo.surge > 1 && (
-              <Card style={{ 
-                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(249, 115, 22, 0.15))',
-                border: '2px solid rgba(239, 68, 68, 0.5)',
-                marginBottom: '1.25rem',
-                padding: '0.85rem'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(239, 68, 68, 0.9)' }}>
-                      🔥 SURGE ACTIVE
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'rgba(239, 68, 68, 0.9)' }}>
-                      +{(surgeInfo.surge * 100 - 100).toFixed(0)}%
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
               <Button
                 variant="primary"
                 onClick={book}
                 disabled={loading}
-                style={{ flex: 2, padding: '0.85rem' }}
+                style={{ flex: 2, padding: '0.75rem' }}
               >
                 {loading ? 'Booking...' : 'Book Ride'}
               </Button>
@@ -377,30 +355,14 @@ export default function RideBooking() {
                 variant="outline"
                 onClick={estimate}
                 disabled={loading}
-                style={{ flex: 1, padding: '0.85rem' }}
+                style={{ flex: 1, padding: '0.75rem' }}
               >
                 Reset
               </Button>
             </div>
           </>
         )}
-      </Card>
-
-      {/* Right Column: Live Map Container */}
-      <Card style={{ margin: 0, padding: '1rem', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '520px' }}>
-        <div style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <FiMapPin style={{ color: 'var(--primary)' }} /> Live Map Routing
-        </div>
-        <div style={{ flex: 1, borderRadius: 'var(--border-radius)', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative', height: '100%', minHeight: '460px' }}>
-          <Map
-            center={mapCenter}
-            zoom={13}
-            markers={markers}
-            height={460}
-            onMapClick={handleMapClick}
-          />
-        </div>
-      </Card>
+      </div>
 
       <Modal
         isOpen={showOtpModal}

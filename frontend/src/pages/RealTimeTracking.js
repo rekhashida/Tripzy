@@ -202,9 +202,18 @@ export default function RealTimeTracking() {
 
   return (
     <>
-      <div className="ride-booking-grid">
-      {/* Left Column: Driver Information, OTP Verification, and Emergency Actions */}
-      <Card style={{ margin: 0 }}>
+      <div className="full-screen-map-layout">
+      {/* Background Map */}
+      <Map
+        center={mapCenter}
+        zoom={15}
+        markers={markers}
+        path={path}
+        height="100%"
+      />
+
+      {/* Floating Panel */}
+      <div className="floating-booking-panel">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <h1 className="card-title" style={{ margin: 0, fontSize: '1.25rem' }}>
             <FiMap style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
@@ -212,6 +221,13 @@ export default function RealTimeTracking() {
           </h1>
           <Badge status={ride.status}>{ride.status}</Badge>
         </div>
+
+        {eta && (
+          <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-color)', padding: '0.5rem 0.75rem', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+            <span>Estimated Arrival:</span>
+            <strong>{eta}</strong>
+          </div>
+        )}
 
         {ride.driver_name ? (
           <Card style={{ background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary))', marginBottom: '1.25rem', padding: '0.85rem' }}>
@@ -319,29 +335,7 @@ export default function RealTimeTracking() {
             <Button variant="outline" size="small" onClick={() => alert('Emergency contact notified.')}>Share Trip</Button>
           </div>
         </Card>
-      </Card>
-
-      {/* Right Column: Live Map */}
-      <Card style={{ margin: 0, padding: '1rem', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '520px' }}>
-        <div style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <FiMapPin style={{ color: 'var(--primary)' }} /> Live Journey Map
-        </div>
-        {eta && (
-          <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-color)', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between' }}>
-            <span>Estimated Arrival Time:</span>
-            <strong>{eta}</strong>
-          </div>
-        )}
-        <div style={{ flex: 1, borderRadius: 'var(--border-radius)', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative', height: '100%', minHeight: '440px' }}>
-          <Map
-            center={mapCenter}
-            zoom={15}
-            markers={markers}
-            path={path}
-            height={440}
-          />
-        </div>
-      </Card>
+      </div>
     </div>
 
       <Modal
