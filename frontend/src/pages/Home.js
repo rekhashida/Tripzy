@@ -10,7 +10,8 @@ import {
   FiShield,
   FiTrendingUp,
   FiClock,
-  FiUser
+  FiUser,
+  FiMic
 } from 'react-icons/fi';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -19,23 +20,7 @@ export default function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const features = [
-    {
-      icon: <FiZap />,
-      title: 'Fast Booking',
-      description: 'Get matched with nearby drivers within seconds. Our smart algorithm finds the best ride for you instantly.'
-    },
-    {
-      icon: <FiShield />,
-      title: 'Secure Parcel Delivery',
-      description: 'Door-to-door parcel handling with live tracking and OTP verification for complete security.'
-    },
-    {
-      icon: <FiTrendingUp />,
-      title: 'Dynamic Fares',
-      description: 'Transparent fare estimation based on actual distance, duration, and local traffic multipliers.'
-    }
-  ];
+  const isDriver = user && user.role === 'driver';
 
   const driverFeatures = [
     {
@@ -55,7 +40,48 @@ export default function Home() {
     }
   ];
 
-  const isDriver = user && user.role === 'driver';
+  const modulesShowcase = [
+    {
+      title: 'Instant Ride Booking',
+      icon: '🚗',
+      badge: 'Core Module',
+      badgeColor: '#3b82f6',
+      desc: 'Get matched with nearby drivers within seconds. Features live mapping, vehicle tiers (Economy to SUV), and dynamic pricing.',
+      link: '/ride'
+    },
+    {
+      title: 'Safe Parcel Delivery',
+      icon: '📦',
+      badge: 'On-Demand',
+      badgeColor: '#f59e0b',
+      desc: 'Send documents or packages door-to-door. Choose luggage size tiers and monitor courier milestones in real time.',
+      link: '/parcel'
+    },
+    {
+      title: 'Smart Ride Pooling',
+      icon: '👥',
+      badge: 'Eco-Friendly',
+      badgeColor: '#10b981',
+      desc: 'Reduce travel expenses and carbon emissions. Share routes with passengers going in your direction.',
+      link: '/pooling'
+    },
+    {
+      title: 'Voice-Activated Booking',
+      icon: '🎙️',
+      badge: 'AI Powered',
+      badgeColor: '#8b5cf6',
+      desc: 'Book rides hands-free. Speaks English, Hindi, and Gujarati, resolving pickup and drop coordinates instantly.',
+      link: '/voice-booking'
+    },
+    {
+      title: 'Real-Time Map Tracking',
+      icon: '🗺️',
+      badge: 'Security',
+      badgeColor: '#ef4444',
+      desc: 'Track active rides on a detailed interactive canvas. Share trip statuses and view live driver progress.',
+      link: '/my-rides'
+    }
+  ];
 
   return (
     <>
@@ -372,20 +398,116 @@ export default function Home() {
         </div>
       )}
 
-      <Card 
-        title={isDriver ? "Driver Benefits & Tools" : "What We Offer"} 
-        subtitle={isDriver ? "Everything you need to succeed as a Tripzy partner" : "Everything you need for your transportation and delivery needs"}
-      >
-        <div className="features">
-          {(isDriver ? driverFeatures : features).map((feature, index) => (
-            <div key={index} className="feature-card">
-              <div className="feature-icon">{feature.icon}</div>
-              <h3 className="feature-title">{feature.title}</h3>
-              <p className="feature-description">{feature.description}</p>
-            </div>
-          ))}
+      {isDriver ? (
+        <Card 
+          title="Driver Benefits & Tools" 
+          subtitle="Everything you need to succeed as a Tripzy partner"
+        >
+          <div className="features">
+            {driverFeatures.map((feature, index) => (
+              <div key={index} className="feature-card">
+                <div className="feature-icon">{feature.icon}</div>
+                <h3 className="feature-title">{feature.title}</h3>
+                <p className="feature-description">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : (
+        <div style={{
+          width: '100%',
+          maxWidth: '1200px',
+          margin: '3rem auto 4rem auto',
+          padding: '0 1rem'
+        }}>
+          <h2 style={{
+            fontSize: '2.2rem',
+            fontWeight: '800',
+            textAlign: 'center',
+            marginBottom: '0.5rem',
+            color: 'var(--text-primary)'
+          }}>
+            Explore Our Modules
+          </h2>
+          <p style={{
+            textAlign: 'center',
+            color: 'var(--text-muted)',
+            marginBottom: '3rem',
+            fontSize: '1.05rem'
+          }}>
+            Premium components designed for seamless on-demand transport and logistics
+          </p>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '2rem',
+            width: '100%'
+          }}>
+            {modulesShowcase.map((mod, index) => (
+              <div 
+                key={index}
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius-lg)',
+                  padding: '2rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  transition: 'transform 0.3s, box-shadow 0.3s',
+                  cursor: 'pointer',
+                  boxShadow: 'var(--shadow-md)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                className="action-card-btn"
+                onClick={() => navigate(user ? mod.link : '/login')}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '4px',
+                  height: '100%',
+                  background: mod.badgeColor
+                }} />
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                    <span style={{ fontSize: '2.5rem' }}>{mod.icon}</span>
+                    <span style={{
+                      fontSize: '0.75rem',
+                      fontWeight: '700',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      padding: '0.25rem 0.6rem',
+                      borderRadius: '20px',
+                      background: 'var(--bg-tertiary)',
+                      color: mod.badgeColor,
+                      border: `1px solid ${mod.badgeColor}`
+                    }}>
+                      {mod.badge}
+                    </span>
+                  </div>
+
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '800', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
+                    {mod.title}
+                  </h3>
+                  
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+                    {mod.desc}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700', fontSize: '0.9rem', color: 'var(--primary)' }}>
+                  Open Module <span style={{ transition: 'transform 0.2s' }}>→</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </Card>
+      )}
 
       {!user && (
         <Card>
