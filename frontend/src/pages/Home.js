@@ -87,9 +87,11 @@ export default function Home() {
     <>
       {isDriver ? (
         <div className="hero" style={{
-          background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary))'
+          background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary))',
+          width: '100%',
+          maxWidth: '100%'
         }}>
-          <div className="hero-content">
+          <div className="hero-content" style={{ maxWidth: '100%' }}>
             <h1>Drive with Tripzy, Earn on Your Terms</h1>
             <p>
               Welcome back, {user.name}! Ready to hit the road? Access your personal dashboard to go online, accept new rides, track your earnings, and view your stats.
@@ -136,7 +138,7 @@ export default function Home() {
       ) : (
         <div style={{
           background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary))',
-          padding: '3rem 2rem',
+          padding: '3rem 2.5rem',
           borderRadius: 'var(--border-radius-lg)',
           border: '1px solid var(--border-color)',
           display: 'flex',
@@ -149,15 +151,15 @@ export default function Home() {
           minHeight: '520px',
           boxShadow: 'var(--shadow-xl)',
           marginBottom: '2.5rem',
-          width: '100%'
+          width: '100%',
+          maxWidth: '100%'
         }}>
-          {/* Top Header Row */}
+          {/* Top Header Row - Full Width */}
           <div style={{
             display: 'flex',
             width: '100%',
             justifyContent: 'space-between',
             alignItems: 'center',
-            maxWidth: '1000px',
             marginBottom: '2rem',
             padding: '0 1rem'
           }}>
@@ -165,14 +167,13 @@ export default function Home() {
             <span style={{ fontSize: '1.5rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>🔔</span>
           </div>
 
-          {/* Search Bar - Wide */}
+          {/* Search Bar - Full Width */}
           <div style={{
             width: '100%',
-            maxWidth: '720px',
             background: 'var(--bg-primary)',
             border: '1px solid var(--border-color)',
             borderRadius: '30px',
-            padding: '0.9rem 1.5rem',
+            padding: '1rem 1.75rem',
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem',
@@ -182,7 +183,7 @@ export default function Home() {
           }} 
           className="search-bar-hover"
           onClick={() => navigate(user ? '/ride' : '/login')}>
-            <span style={{ color: 'var(--primary)', fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>🔍</span>
+            <span style={{ color: 'var(--primary)', fontSize: '1.25rem', display: 'flex', alignItems: 'center' }}>🔍</span>
             <input 
               type="text" 
               placeholder="Where to?" 
@@ -192,18 +193,17 @@ export default function Home() {
                 background: 'transparent',
                 outline: 'none',
                 width: '100%',
-                fontSize: '1.1rem',
+                fontSize: '1.15rem',
                 color: 'var(--text-primary)',
                 cursor: 'pointer'
               }}
             />
-            <span style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>✖</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>✖</span>
           </div>
 
-          {/* Winding Road Illustration - Stretched Wide */}
+          {/* Winding Road Illustration - Stretched Full Width */}
           <div style={{
             width: '100%',
-            maxWidth: '1000px',
             height: '240px',
             position: 'relative',
             overflow: 'hidden',
@@ -231,6 +231,8 @@ export default function Home() {
               <div style={{ width: '50px', height: '100px', background: '#cbd5e1', borderRadius: '6px 6px 0 0' }} />
               <div style={{ width: '35px', height: '70px', background: '#94a3b8', borderRadius: '5px 5px 0 0' }} />
               <div style={{ width: '45px', height: '90px', background: '#cbd5e1', borderRadius: '6px 6px 0 0' }} />
+              <div style={{ width: '35px', height: '65px', background: '#94a3b8', borderRadius: '4px 4px 0 0' }} />
+              <div style={{ width: '55px', height: '105px', background: '#cbd5e1', borderRadius: '6px 6px 0 0' }} />
             </div>
 
             {/* Clouds */}
@@ -278,13 +280,12 @@ export default function Home() {
             Tripzy
           </h1>
 
-          {/* Action Grid - 3 Columns (Ride, Package, Ride Sharing) */}
+          {/* Action Grid - Full Width */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
             gap: '2rem',
             width: '100%',
-            maxWidth: '1000px',
             marginBottom: '1.5rem'
           }}>
             <div 
@@ -293,7 +294,7 @@ export default function Home() {
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)',
                 borderRadius: 'var(--border-radius-lg)',
-                padding: '2rem 1.5rem',
+                padding: '2.5rem 1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -319,8 +320,8 @@ export default function Home() {
               }}>
                 🚗
               </div>
-              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)' }}>Ride</div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Book a private ride instantly</p>
+              <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)' }}>Ride</div>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Book a private ride instantly</p>
             </div>
 
             <div 
@@ -329,7 +330,7 @@ export default function Home() {
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)',
                 borderRadius: 'var(--border-radius-lg)',
-                padding: '2rem 1.5rem',
+                padding: '2.5rem 1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -355,8 +356,8 @@ export default function Home() {
               }}>
                 📦
               </div>
-              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)' }}>Package</div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Send and track couriers safely</p>
+              <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)' }}>Package</div>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Send and track couriers safely</p>
             </div>
 
             <div 
@@ -365,7 +366,7 @@ export default function Home() {
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)',
                 borderRadius: 'var(--border-radius-lg)',
-                padding: '2rem 1.5rem',
+                padding: '2.5rem 1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -391,8 +392,8 @@ export default function Home() {
               }}>
                 👥
               </div>
-              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)' }}>Ride Sharing</div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Join pools and share expenses</p>
+              <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)' }}>Ride Sharing</div>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Join pools and share expenses</p>
             </div>
           </div>
         </div>
@@ -402,8 +403,9 @@ export default function Home() {
         <Card 
           title="Driver Benefits & Tools" 
           subtitle="Everything you need to succeed as a Tripzy partner"
+          style={{ width: '100%', maxWidth: '100%' }}
         >
-          <div className="features">
+          <div className="features" style={{ width: '100%', maxWidth: '100%' }}>
             {driverFeatures.map((feature, index) => (
               <div key={index} className="feature-card">
                 <div className="feature-icon">{feature.icon}</div>
@@ -416,12 +418,11 @@ export default function Home() {
       ) : (
         <div style={{
           width: '100%',
-          maxWidth: '1200px',
           margin: '3rem auto 4rem auto',
-          padding: '0 1rem'
+          padding: '0'
         }}>
           <h2 style={{
-            fontSize: '2.2rem',
+            fontSize: '2.4rem',
             fontWeight: '800',
             textAlign: 'center',
             marginBottom: '0.5rem',
@@ -433,7 +434,7 @@ export default function Home() {
             textAlign: 'center',
             color: 'var(--text-muted)',
             marginBottom: '3rem',
-            fontSize: '1.05rem'
+            fontSize: '1.1rem'
           }}>
             Premium components designed for seamless on-demand transport and logistics
           </p>
@@ -441,7 +442,7 @@ export default function Home() {
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: '2rem',
+            gap: '2.5rem',
             width: '100%'
           }}>
             {modulesShowcase.map((mod, index) => (
@@ -491,16 +492,16 @@ export default function Home() {
                     </span>
                   </div>
 
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: '800', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: '800', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
                     {mod.title}
                   </h3>
                   
-                  <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+                  <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '1.5rem' }}>
                     {mod.desc}
                   </p>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700', fontSize: '0.9rem', color: 'var(--primary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700', fontSize: '0.95rem', color: 'var(--primary)' }}>
                   Open Module <span style={{ transition: 'transform 0.2s' }}>→</span>
                 </div>
               </div>
@@ -510,7 +511,7 @@ export default function Home() {
       )}
 
       {!user && (
-        <Card>
+        <Card style={{ width: '100%', maxWidth: '100%' }}>
           <div className="text-center">
             <h2 style={{ marginBottom: '1rem' }}>Ready to Get Started?</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
