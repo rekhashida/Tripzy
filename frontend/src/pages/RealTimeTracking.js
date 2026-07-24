@@ -235,7 +235,7 @@ export default function RealTimeTracking() {
                 fontWeight: 700,
                 fontSize: '1.1rem'
               }}>
-                {ride.driver_name[0].toUpperCase()}
+                {ride.driver_name && ride.driver_name.length > 0 ? ride.driver_name[0].toUpperCase() : 'D'}
               </div>
               <div>
                 <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{ride.driver_name}</div>
@@ -316,7 +316,7 @@ export default function RealTimeTracking() {
         </div>
 
         {/* Emergency Panel / SOS Panel */}
-        <Card style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', margin: 0, padding: '0.85rem' }}>
+        <Card style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', marginBottom: '1.25rem', padding: '0.85rem' }}>
           <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--danger)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             🚨 Safety Shield Active
           </div>
@@ -324,6 +324,29 @@ export default function RealTimeTracking() {
             <Button variant="outline" size="small" onClick={() => window.open(`tel:${ride.driver_phone || '911'}`)}>Call</Button>
             <Button variant="primary" size="small" style={{ background: 'var(--danger)', color: '#fff' }} onClick={handleSos}>SOS Alert</Button>
             <Button variant="outline" size="small" onClick={() => alert('Emergency contact notified.')}>Share Trip</Button>
+          </div>
+        </Card>
+
+        {/* Emergency Sharing Section */}
+        <Card style={{ background: 'var(--bg-secondary)', marginBottom: '1rem', border: '1px solid var(--border-color)', padding: '0.85rem' }}>
+          <h3 style={{ marginBottom: '0.5rem', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444', fontWeight: 700 }}>
+            🛡️ Safety Shield
+          </h3>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            Enter a trusted contact to simulate sending an emergency live tracking SMS link.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <Input
+              label="Emergency Contact Phone"
+              type="text"
+              value={emergencyPhone}
+              onChange={(e) => setEmergencyPhone(e.target.value)}
+              placeholder="e.g. +91 99999 99999"
+              style={{ padding: '0.5rem' }}
+            />
+            <Button variant="primary" onClick={() => setShowSmsModal(true)} disabled={!emergencyPhone} style={{ padding: '0.6rem', fontSize: '0.85rem' }}>
+              Simulate Emergency Share
+            </Button>
           </div>
         </Card>
       </div>
@@ -382,31 +405,6 @@ export default function RealTimeTracking() {
         </div>
       </Modal>
 
-      {/* Emergency Sharing Section */}
-      {ride && (
-        <Card style={{ background: 'var(--bg-secondary)', marginBottom: '1.5rem', border: '1px solid var(--border-color)' }}>
-          <h3 style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444' }}>
-            🛡️ Safety Shield
-          </h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
-            Enter a trusted contact to simulate sending an emergency live tracking SMS link.
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <div style={{ flex: '1', minWidth: '200px' }}>
-              <Input
-                label="Emergency Contact Phone"
-                type="text"
-                value={emergencyPhone}
-                onChange={(e) => setEmergencyPhone(e.target.value)}
-                placeholder="e.g. +91 99999 99999"
-              />
-            </div>
-            <Button variant="primary" onClick={() => setShowSmsModal(true)} disabled={!emergencyPhone}>
-              Simulate Emergency Share
-            </Button>
-          </div>
-        </Card>
-      )}
 
       <Modal
         isOpen={showSmsModal}
