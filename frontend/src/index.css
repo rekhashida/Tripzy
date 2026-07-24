@@ -1428,4 +1428,48 @@ textarea {
   }
 }
 
+/* AI Insight Card Style */
+.ai-insight-card {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(99, 102, 241, 0.08));
+  border: 1px dashed #8b5cf6;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  text-align: left;
+}
+
+.ai-insight-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #8b5cf6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(139, 92, 246, 0.15);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+
+.ai-insight-text {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* Surge Indicator Active Style */
+.surge-active-indicator {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 

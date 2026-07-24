@@ -2,6 +2,7 @@ const express = require('express');
 const { auth } = require('../middleware/auth');
 const {
   createParcel,
+  estimateParcel,
   myParcels,
   getParcel,
   verifyParcelPickupOTP,
@@ -10,6 +11,7 @@ const {
 const router = express.Router();
 
 router.post('/', auth, createParcel);
+router.post('/estimate', auth, estimateParcel);
 router.get('/my', auth, myParcels);
 router.get('/:parcelId', auth, getParcel);
 router.post('/:parcelId/verify-pickup', auth, verifyParcelPickupOTP);

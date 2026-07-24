@@ -40,6 +40,7 @@ export default function VoiceBooking() {
   const [duration, setDuration] = useState(null);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [rideOtp, setRideOtp] = useState({ rideId: null, pickup_otp: null });
+  const [surgeInfo, setSurgeInfo] = useState(null);
 
   const recognitionRef = useRef(null);
   const navigate = useNavigate();
@@ -110,6 +111,50 @@ export default function VoiceBooking() {
     setListening(false);
   };
 
+  const getAiPriceInsight = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    const minutes = now.getMinutes();
+    const timeInHours = hour + minutes / 60;
+
+    const morningPeakStart = 8.5;
+    const morningPeakEnd = 10.0;
+    const eveningPeakStart = 18.0;
+    const eveningPeakEnd = 20.5;
+
+    const isMorningPeak = timeInHours >= morningPeakStart && timeInHours <= morningPeakEnd;
+    const isEveningPeak = timeInHours >= eveningPeakStart && timeInHours <= eveningPeakEnd;
+    const isPeakActive = isMorningPeak || isEveningPeak;
+
+    if (isPeakActive) {
+      let remainingMin = 0;
+      if (isMorningPeak) {
+        remainingMin = Math.round((morningPeakEnd - timeInHours) * 60);
+      } else {
+        remainingMin = Math.round((eveningPeakEnd - timeInHours) * 60);
+      }
+      return {
+        isPeak: true,
+        text: `🔥 AI Price Insight: Fares are currently 1.5x higher due to Peak Hours. Demand is expected to return to normal in approximately ${remainingMin} minutes. If your travel is not urgent, consider waiting to save on fare!`
+      };
+    } else {
+      let nextPeakMsg = '';
+      if (timeInHours < morningPeakStart) {
+        const diffMin = Math.round((morningPeakStart - timeInHours) * 60);
+        nextPeakMsg = `Morning Peak starts in ${diffMin} minutes (8:30 AM)`;
+      } else if (timeInHours < eveningPeakStart) {
+        const diffMin = Math.round((eveningPeakStart - timeInHours) * 60);
+        nextPeakMsg = `Evening Peak starts in ${diffMin} minutes (6:00 PM)`;
+      } else {
+        nextPeakMsg = `Morning Peak starts at 8:30 AM tomorrow`;
+      }
+      return {
+        isPeak: false,
+        text: `💡 AI Price Insight: Demand is currently low. Book your ride now to take advantage of standard fares before the next surge (${nextPeakMsg})!`
+      };
+    }
+  };
+
   const estimateVoiceFare = async (pLoc, dLoc) => {
     setLoading(true);
     try {
@@ -125,6 +170,7 @@ export default function VoiceBooking() {
       setEstimatedVehicle(vehicleType);
       setDistance(data.distanceKm);
       setDuration(data.durationMin);
+      setSurgeInfo(data.breakdown);
       setMsg(
         lang === 'hi'
           ? `किराया अनुमानित: ₹${data.fare} | दूरी: ${data.distanceKm} किमी`
@@ -384,6 +430,34 @@ export default function VoiceBooking() {
 
         {fare && (
           <>
+            {surgeInfo && surgeInfo.surge > 1 && (
+              <div className="surge-active-indicator">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', textAlign: 'left' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    🔥 SURGE PRICING ACTIVE
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {surgeInfo.isLateNight ? 'Late Night Demand' : 'Peak Hour Rush'}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', gap: '0.25rem', textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Surge: {Math.round((surgeInfo.surge - 1) * 100)}%
+                  </div>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: '#ef4444' }}>
+                    Base: ₹{Math.round(surgeInfo.vehicleAdjustedSubtotal)} → ₹{surgeInfo.final}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="ai-insight-card">
+              <div className="ai-insight-badge">🤖 AI Insight</div>
+              <div className="ai-insight-text">
+                {getAiPriceInsight().text}
+              </div>
+            </div>
+
             <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
               Select Vehicle Option
             </div>

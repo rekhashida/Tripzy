@@ -273,6 +273,34 @@ export default function RideBooking() {
           </Button>
         ) : (
           <>
+            {surgeInfo && surgeInfo.surge > 1 && (
+              <div className="surge-active-indicator">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', textAlign: 'left' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    🔥 SURGE PRICING ACTIVE
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {surgeInfo.isLateNight ? 'Late Night Demand' : 'Peak Hour Rush'}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', gap: '0.25rem', textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Surge: {Math.round((surgeInfo.surge - 1) * 100)}%
+                  </div>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: '#ef4444' }}>
+                    Base: ₹{Math.round(surgeInfo.vehicleAdjustedSubtotal)} → ₹{surgeInfo.final}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="ai-insight-card">
+              <div className="ai-insight-badge">🤖 AI Insight</div>
+              <div className="ai-insight-text">
+                {getAiPriceInsight().text}
+              </div>
+            </div>
+
             <div style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
               Select Vehicle Option
             </div>

@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 const { getDistanceAndDuration } = require('../services/mapsService');
-const { calculateParcelFare } = require('../services/fareService');
+const { calculateParcelFare, isPeakHour, isLateNight } = require('../services/fareService');
 const { findNearbyDrivers } = require('../services/matchingService');
 const { saveOTP, verifyOTP } = require('../services/otpService');
 
@@ -20,6 +20,30 @@ const createParcel = async (req, res) => {
     const dropOtp = await saveOTP(recipient_phone || req.user.phone, 'parcel_drop', parcelId);
     await pool.query('UPDATE parcels SET pickup_otp = ?, drop_otp = ? WHERE id = ?', [pickupOtp, dropOtp, parcelId]);
     res.status(201).json({ parcelId, fare, pickup_otp: pickupOtp, drop_otp: dropOtp, message: 'Parcel created.' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
+const estimateParcel = async (req, res) => {
+  try {
+    const { pickup_lat, pickup_lng, drop_lat, drop_lng, weight_kg } = req.body;
+    const { distanceKm, durationMin } = await getDistanceAndDuration(pickup_lat, pickup_lng, drop_lat, drop_lng);
+    const fare = calculateParcelFare(distanceKm, weight_kg || 1);
+    const surge = isPeakHour() ? 1.4 : isLateNight() ? 1.2 : 1.0;
+    const finalFare = Math.round(fare * surge);
+    res.json({
+      fare: finalFare,
+      distanceKm,
+      durationMin,
+      breakdown: {
+        base: fare,
+        surge,
+        final: finalFare,
+        isPeakHour: isPeakHour(),
+        isLateNight: isLateNight()
+      }
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -79,4 +103,4 @@ const verifyParcelDropOTP = async (req, res) => {
   }
 };
 
-module.exports = { createParcel, myParcels, getParcel, verifyParcelPickupOTP, verifyParcelDropOTP };
+module.exports = { createParcel, estimateParcel, myParcels, getParcel, verifyParcelPickupOTP, verifyParcelDropOTP };
