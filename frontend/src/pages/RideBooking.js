@@ -200,18 +200,10 @@ export default function RideBooking() {
     : { lat: 23.0225, lng: 72.5714 };
 
   return (
-    <div className="full-screen-map-layout">
-      {/* Background Live Map */}
-      <Map
-        center={mapCenter}
-        zoom={13}
-        markers={markers}
-        height="100%"
-        onMapClick={handleMapClick}
-      />
-
-      {/* Floating Left Control Panel */}
-      <div className="floating-booking-panel">
+    <>
+      <div className="ride-booking-split-layout">
+        {/* Left Control Panel (40%) */}
+        <div className="booking-panel-sidebar">
         <h1 className="card-title" style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>
           <FiNavigation style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
           Book a Ride
@@ -364,6 +356,17 @@ export default function RideBooking() {
         )}
       </div>
 
+      {/* Right Map Canvas (60%) */}
+      <div className="map-canvas-container">
+        <Map
+          center={mapCenter}
+          zoom={13}
+          markers={markers}
+          height="100%"
+          onMapClick={handleMapClick}
+        />
+      </div>
+
       <Modal
         isOpen={showOtpModal}
         onClose={() => {
@@ -417,5 +420,6 @@ export default function RideBooking() {
         </div>
       </Modal>
     </div>
+    </>
   );
 }

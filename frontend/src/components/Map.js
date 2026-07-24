@@ -153,11 +153,12 @@ export default function Map({ center, zoom = 14, markers = [], path = [], height
   }
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', height, width: '100%' }}>
       <div 
         className={`map-container ${is3D ? 'td-mode' : ''}`} 
         style={{ 
-          height, 
+          height: '100%', 
+          width: '100%',
           borderRadius: '8px', 
           border: '1px solid var(--border-color, #2f2f3f)',
           transition: 'transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s'

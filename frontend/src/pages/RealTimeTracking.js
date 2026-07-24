@@ -202,19 +202,10 @@ export default function RealTimeTracking() {
 
   return (
     <>
-      <div className="full-screen-map-layout">
-      {/* Background Map */}
-      <Map
-        center={mapCenter}
-        zoom={15}
-        markers={markers}
-        path={path}
-        height="100%"
-      />
-
-      {/* Floating Panel */}
-      <div className="floating-booking-panel">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div className="ride-booking-split-layout">
+        {/* Left Control Panel (40%) */}
+        <div className="booking-panel-sidebar">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <h1 className="card-title" style={{ margin: 0, fontSize: '1.25rem' }}>
             <FiMap style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
             Ride #{rideId}
@@ -335,6 +326,17 @@ export default function RealTimeTracking() {
             <Button variant="outline" size="small" onClick={() => alert('Emergency contact notified.')}>Share Trip</Button>
           </div>
         </Card>
+      </div>
+
+      {/* Right Map Canvas (60%) */}
+      <div className="map-canvas-container">
+        <Map
+          center={mapCenter}
+          zoom={15}
+          markers={markers}
+          path={path}
+          height="100%"
+        />
       </div>
     </div>
 

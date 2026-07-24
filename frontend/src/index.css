@@ -1354,64 +1354,77 @@ textarea {
   }
 }
 
-.full-screen-map-layout {
+.ride-booking-split-layout {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: calc(100vh - 80px);
   position: absolute;
   top: 80px;
   left: 0;
   right: 0;
   bottom: 0;
-  width: 100%;
-  height: calc(100vh - 80px);
   overflow: hidden;
-  margin: 0;
-  padding: 0;
-}
-
-.floating-booking-panel {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 420px;
-  max-height: calc(100vh - 140px);
-  overflow-y: auto;
-  z-index: 1000;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
-  margin: 0;
   background: var(--bg-primary);
-  border-radius: var(--border-radius-lg);
-  border: 1px solid var(--border-color);
-  padding: 1.5rem;
 }
 
-/* Custom scrollbar for floating panel */
-.floating-booking-panel::-webkit-scrollbar {
+.booking-panel-sidebar {
+  width: 40%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 2rem;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.map-canvas-container {
+  width: 60%;
+  height: 100%;
+  position: relative;
+}
+
+/* Custom scrollbar for booking sidebar */
+.booking-panel-sidebar::-webkit-scrollbar {
   width: 6px;
 }
-.floating-booking-panel::-webkit-scrollbar-track {
+.booking-panel-sidebar::-webkit-scrollbar-track {
   background: transparent;
 }
-.floating-booking-panel::-webkit-scrollbar-thumb {
+.booking-panel-sidebar::-webkit-scrollbar-thumb {
   background-color: var(--border-color);
   border-radius: 3px;
 }
 
-@media (max-width: 768px) {
-  .full-screen-map-layout {
-    position: static;
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    width: 100%;
-    margin-top: 0;
+@media (max-width: 991px) {
+  .booking-panel-sidebar {
+    width: 45%;
   }
-  .floating-booking-panel {
+  .map-canvas-container {
+    width: 55%;
+  }
+}
+
+@media (max-width: 768px) {
+  .ride-booking-split-layout {
+    flex-direction: column;
     position: static;
+    height: auto;
+    overflow: visible;
+  }
+  .booking-panel-sidebar {
     width: 100%;
+    height: auto;
     max-height: none;
-    box-shadow: none;
-    border: none;
-    padding: 1rem;
-    margin-top: 1rem;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.5rem;
+  }
+  .map-canvas-container {
+    width: 100%;
+    height: 400px;
   }
 }
 
