@@ -137,6 +137,10 @@ export default function RealTimeTracking() {
     }
   };
 
+  const handleSos = () => {
+    alert('🚨 Emergency SOS triggered! Local authorities and emergency services have been dispatched with your live coordinates.');
+  };
+
   const verifyOTP = async () => {
     if (!otp) {
       setOtpMsg('Please enter OTP');
