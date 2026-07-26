@@ -297,7 +297,7 @@ export default function Login() {
             <button
               onClick={() => {
                 setEmail('rider@tripzy.com');
-                setPassword('password');
+                setPassword('TripzyDemoSecuredPass2026!');
                 setLoginMode('email');
               }}
               style={{
@@ -317,7 +317,7 @@ export default function Login() {
             <button
               onClick={() => {
                 setEmail('driver@tripzy.com');
-                setPassword('password');
+                setPassword('TripzyDemoSecuredPass2026!');
                 setLoginMode('email');
               }}
               style={{
@@ -337,7 +337,7 @@ export default function Login() {
             <button
               onClick={() => {
                 setEmail('auto_driver@tripzy.com');
-                setPassword('password');
+                setPassword('TripzyDemoSecuredPass2026!');
                 setLoginMode('email');
               }}
               style={{
@@ -357,7 +357,7 @@ export default function Login() {
             <button
               onClick={() => {
                 setEmail('admin@tripzy.com');
-                setPassword('password');
+                setPassword('TripzyDemoSecuredPass2026!');
                 setLoginMode('email');
               }}
               style={{

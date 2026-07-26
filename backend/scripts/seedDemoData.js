@@ -16,7 +16,7 @@ const pool = mysql.createPool({
 async function run() {
   try {
     console.log('Connecting to database...');
-    const passwordHash = await bcrypt.hash('password', 10);
+    const passwordHash = await bcrypt.hash('TripzyDemoSecuredPass2026!', 10);
 
     // 1. Seed Users
     const users = [
