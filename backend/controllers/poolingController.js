@@ -78,4 +78,66 @@ const listPools = async (req, res) => {
   }
 };
 
-module.exports = { createPoolRide, joinPool, listPools };
+const simulateJoin = async (req, res) => {
+  try {
+    const { rideId } = req.body;
+    if (!rideId) return res.status(400).json({ error: 'rideId is required.' });
+
+    // 1. Get the ride
+    const [rides] = await pool.query('SELECT * FROM rides WHERE id = ? AND is_pooling = 1 AND status = ?', [rideId, 'pending']);
+    if (!rides.length) return res.status(404).json({ error: 'Pooling ride not found or not active.' });
+    const ride = rides[0];
+
+    // 2. Find passengers already in this pool to avoid duplicates
+    const [existingPools] = await pool.query('SELECT user_id FROM ride_pools WHERE ride_id = ?', [rideId]);
+    const existingUserIds = existingPools.map(p => p.user_id);
+
+    // 3. Find a mock user to join (e.g. Priya Patel, Rahul Mehta, Sneha Reddy)
+    const [mockUsers] = await pool.query('SELECT id, name, phone FROM users WHERE email IN ("priya@tripzy.com", "rahul@tripzy.com", "sneha@tripzy.com")');
+    const availableMockUser = mockUsers.find(u => !existingUserIds.includes(u.id));
+
+    if (!availableMockUser) {
+      return res.status(400).json({ error: 'No more mock users available to join this pool.' });
+    }
+
+    // 4. Calculate new fare share
+    const totalPassengers = existingUserIds.length + 1;
+    const newFareShare = calculatePoolFareShare(ride.fare, totalPassengers);
+
+    // 5. Insert the mock passenger
+    await pool.query(
+      'INSERT INTO ride_pools (ride_id, user_id, pickup_lat, pickup_lng, drop_lat, drop_lng, fare_share, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [rideId, availableMockUser.id, ride.pickup_lat, ride.pickup_lng, ride.drop_lat, ride.drop_lng, newFareShare, 'joined']
+    );
+
+    // 6. Update fare share of all other members in the pool
+    await pool.query('UPDATE ride_pools SET fare_share = ? WHERE ride_id = ?', [newFareShare, rideId]);
+
+    // 7. Emit socket.io event to notify pool members
+    try {
+      const { getIo } = require('../socket/index');
+      const io = getIo();
+      if (io) {
+        io.to(`ride:${rideId}`).emit('pool-joined', {
+          userName: availableMockUser.name,
+          fareShare: newFareShare,
+          totalPassengers
+        });
+        // Also emit status-update to force reload
+        io.to(`ride:${rideId}`).emit('status-update', { status: 'pending' });
+      }
+    } catch (sockErr) {
+      console.warn('Socket emit failed during mock join:', sockErr.message);
+    }
+
+    res.json({
+      message: 'Simulated passenger joined.',
+      userName: availableMockUser.name,
+      fareShare: newFareShare
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
+module.exports = { createPoolRide, joinPool, listPools, simulateJoin };
