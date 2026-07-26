@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FiMap, FiNavigation, FiMapPin, FiClock, FiDollarSign, FiUser, FiPhone, FiCheckCircle } from 'react-icons/fi';
 import api from '../services/api';
-import { joinRideRoom, leaveRideRoom, onLocationUpdate, offLocationUpdate, onStatusUpdate, offStatusUpdate } from '../services/socket';
+import { joinRideRoom, leaveRideRoom, onLocationUpdate, offLocationUpdate, onStatusUpdate, offStatusUpdate, getSocket } from '../services/socket';
 import Map from '../components/Map';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
@@ -18,6 +18,7 @@ export default function RealTimeTracking() {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
   const [otpModalOpen, setOtpModalOpen] = useState(false);
+  const [poolNotification, setPoolNotification] = useState(null);
   const [otpType, setOtpType] = useState('pickup');
   const [otp, setOtp] = useState('');
   const [otpMsg, setOtpMsg] = useState('');
@@ -86,12 +87,48 @@ export default function RealTimeTracking() {
     };
     onStatusUpdate(statusHandler);
 
+    const poolJoinedHandler = (data) => {
+      setPoolNotification(data);
+      loadRide();
+      setTimeout(() => setPoolNotification(null), 6000);
+    };
+    
+    let s = null;
+    try {
+      s = getSocket();
+      if (s) {
+        s.on('pool-joined', poolJoinedHandler);
+      }
+    } catch (sockErr) {
+      console.warn('Socket listener failed to bind:', sockErr.message);
+    }
+
     return () => {
       leaveRideRoom(rideId);
       offLocationUpdate();
       offStatusUpdate();
+      if (s) {
+        s.off('pool-joined', poolJoinedHandler);
+      }
     };
   }, [rideId]);
+
+  // Simulation of other passengers joining pool
+  useEffect(() => {
+    if (!ride || !ride.is_pooling || ride.status !== 'pending') return;
+
+    const joinedCount = ride.passengers ? ride.passengers.length : 1;
+    if (joinedCount < 3) {
+      const timer = setTimeout(async () => {
+        try {
+          await api.post('/pooling/simulate-join', { rideId });
+        } catch (simErr) {
+          console.warn('Simulated passenger join skipped:', simErr.message);
+        }
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [ride, rideId]);
 
   useEffect(() => {
     const computeEta = () => {
@@ -206,6 +243,33 @@ export default function RealTimeTracking() {
 
   return (
     <>
+      {poolNotification && (
+        <div style={{
+          position: 'fixed',
+          top: '90px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--bg-glass)',
+          border: '1px solid #10b981',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3), var(--shadow-glow)',
+          borderRadius: '12px',
+          padding: '1rem 1.5rem',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          animation: 'slideDown 0.3s ease-out'
+        }}>
+          <span style={{ fontSize: '1.5rem' }}>🔔</span>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontWeight: 800, color: '#34d399', fontSize: '0.9rem' }}>Match Found!</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <strong>{poolNotification.userName}</strong> has joined your pool. Your fare share drops to <strong>₹{poolNotification.fareShare}</strong>!
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="ride-booking-split-layout">
         {/* Left Control Panel (40%) */}
         <div className="booking-panel-sidebar">
@@ -271,6 +335,38 @@ export default function RealTimeTracking() {
           }}>
             Waiting for driver assignment...
           </div>
+        )}
+
+        {ride.is_pooling === 1 && (
+          <Card style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(236, 72, 153, 0.08))', marginBottom: '1.25rem', padding: '0.85rem', border: '1px solid var(--primary)' }}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.75rem 0', color: 'var(--primary-light)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              👥 Pool Passengers ({ride.passengers ? ride.passengers.length : 1}/3)
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {/* Creator */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                <span style={{ fontWeight: 600 }}>🙋‍♂️ You (Creator)</span>
+                <span style={{ color: 'var(--text-muted)' }}>Share: ₹{ride.passengers && ride.passengers.length > 0 ? ride.passengers[0].fare_share : ride.fare}</span>
+              </div>
+              {/* Joined Members */}
+              {ride.passengers && ride.passengers.map((p) => {
+                if (p.user_id === ride.user_id) return null;
+                return (
+                  <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem', opacity: 0.9 }}>
+                    <span>👥 {p.user_name}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Share: ₹{p.fare_share}</span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {(!ride.passengers || ride.passengers.length < 3) && (
+              <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span className="spinner-mini" style={{ width: '10px', height: '10px', border: '2px solid var(--text-muted)', borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 1s linear infinite' }}></span>
+                <span>Searching for nearby passengers matching your route...</span>
+              </div>
+            )}
+          </Card>
         )}
 
         {/* Address Indicators */}

@@ -282,6 +282,101 @@ export default function Login() {
           <div id="googleSignInDiv" style={{ width: '100%' }}></div>
         </div>
 
+        <div style={{
+          marginTop: '1.75rem',
+          padding: '1.25rem',
+          background: 'var(--bg-secondary)',
+          border: '1px dashed var(--border-color)',
+          borderRadius: '8px',
+          textAlign: 'left'
+        }}>
+          <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+            🔑 Demo Quick Accounts (Daily Life Seeded)
+          </h4>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <button
+              onClick={() => {
+                setEmail('rider@tripzy.com');
+                setPassword('password');
+                setLoginMode('email');
+              }}
+              style={{
+                background: 'rgba(99, 102, 241, 0.15)',
+                color: 'var(--primary-light)',
+                border: '1px solid var(--primary)',
+                padding: '0.4rem 0.75rem',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontWeight: 600,
+                transition: 'all 0.2s'
+              }}
+            >
+              🙋‍♂️ Passenger / Rider
+            </button>
+            <button
+              onClick={() => {
+                setEmail('driver@tripzy.com');
+                setPassword('password');
+                setLoginMode('email');
+              }}
+              style={{
+                background: 'rgba(16, 185, 129, 0.15)',
+                color: '#34d399',
+                border: '1px solid #10b981',
+                padding: '0.4rem 0.75rem',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontWeight: 600,
+                transition: 'all 0.2s'
+              }}
+            >
+              🚗 Sedan Driver
+            </button>
+            <button
+              onClick={() => {
+                setEmail('auto_driver@tripzy.com');
+                setPassword('password');
+                setLoginMode('email');
+              }}
+              style={{
+                background: 'rgba(245, 158, 11, 0.15)',
+                color: '#fbbf24',
+                border: '1px solid #f59e0b',
+                padding: '0.4rem 0.75rem',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontWeight: 600,
+                transition: 'all 0.2s'
+              }}
+            >
+              🛺 Auto Rickshaw Driver
+            </button>
+            <button
+              onClick={() => {
+                setEmail('admin@tripzy.com');
+                setPassword('password');
+                setLoginMode('email');
+              }}
+              style={{
+                background: 'rgba(239, 68, 68, 0.15)',
+                color: '#f87171',
+                border: '1px solid #ef4444',
+                padding: '0.4rem 0.75rem',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontWeight: 600,
+                transition: 'all 0.2s'
+              }}
+            >
+              👑 Admin Console
+            </button>
+          </div>
+        </div>
+
         <p style={{ marginTop: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
           New here?{' '}
           <Link to="/register" style={{ color: 'var(--primary-light)', fontWeight: 600 }}>

@@ -217,7 +217,8 @@ export default function RidePooling() {
               options={[
                 { value: 'sedan', label: 'Sedan' },
                 { value: 'hatchback', label: 'Hatchback' },
-                { value: 'suv', label: 'SUV' }
+                { value: 'suv', label: 'SUV' },
+                { value: 'auto', label: 'Auto Rickshaw' }
               ]}
             />
           </div>

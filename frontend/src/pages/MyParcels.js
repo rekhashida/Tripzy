@@ -152,13 +152,11 @@ export default function MyParcels() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {(parcel.status === 'in_transit' || parcel.status === 'picked_up') && (
-                    <Link to={`/tracking/${parcel.id}`}>
-                      <Button variant="primary" style={{ whiteSpace: 'nowrap' }}>
-                        <FiTruck /> Track
-                      </Button>
-                    </Link>
-                  )}
+                  <Link to={`/tracking/parcel/${parcel.id}`}>
+                    <Button variant="primary" style={{ whiteSpace: 'nowrap' }}>
+                      <FiTruck /> Track
+                    </Button>
+                  </Link>
                 </div>
               </div>
             ))}

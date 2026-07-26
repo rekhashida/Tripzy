@@ -11,6 +11,7 @@ import ParcelDelivery from './pages/ParcelDelivery';
 import VoiceBooking from './pages/VoiceBooking';
 import RidePooling from './pages/RidePooling';
 import RealTimeTracking from './pages/RealTimeTracking';
+import ParcelTracking from './pages/ParcelTracking';
 import MyRides from './pages/MyRides';
 import MyParcels from './pages/MyParcels';
 import AdminDashboard from './pages/AdminDashboard';
@@ -47,6 +48,7 @@ function App() {
                 <Route path="/voice" element={<PrivateRoute><VoiceBooking /></PrivateRoute>} />
                 <Route path="/pooling" element={<PrivateRoute><RidePooling /></PrivateRoute>} />
                 <Route path="/tracking/:rideId" element={<PrivateRoute><RealTimeTracking /></PrivateRoute>} />
+                <Route path="/tracking/parcel/:parcelId" element={<PrivateRoute><ParcelTracking /></PrivateRoute>} />
                 <Route path="/my-rides" element={<PrivateRoute><MyRides /></PrivateRoute>} />
                 <Route path="/my-parcels" element={<PrivateRoute><MyParcels /></PrivateRoute>} />
                 <Route path="/admin" element={<RoleRoute roles={["admin"]}><AdminDashboard /></RoleRoute>} />

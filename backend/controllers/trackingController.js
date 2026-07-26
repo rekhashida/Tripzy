@@ -7,8 +7,18 @@ const getRideForTracking = async (req, res) => {
       [req.params.rideId]
     );
     if (!ride.length) return res.status(404).json({ error: 'Ride not found.' });
+
+    let passengers = [];
+    if (ride[0].is_pooling) {
+      const [poolRows] = await pool.query(
+        'SELECT rp.*, u.name as user_name, u.phone as user_phone FROM ride_pools rp JOIN users u ON rp.user_id = u.id WHERE rp.ride_id = ?',
+        [req.params.rideId]
+      );
+      passengers = poolRows;
+    }
+
     const [loc] = await pool.query('SELECT latitude, longitude, updated_at FROM driver_locations WHERE driver_id = ? ORDER BY updated_at DESC LIMIT 1', [ride[0].driver_id]);
-    res.json({ ...ride[0], driverLocation: loc[0] || null });
+    res.json({ ...ride[0], passengers, driverLocation: loc[0] || null });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

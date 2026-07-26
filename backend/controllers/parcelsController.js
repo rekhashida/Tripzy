@@ -78,7 +78,10 @@ const verifyParcelPickupOTP = async (req, res) => {
     const [p] = await pool.query('SELECT * FROM parcels WHERE id = ?', [parcelId]);
     if (!p.length) return res.status(404).json({ error: 'Parcel not found.' });
     const phone = p[0].recipient_phone || (await pool.query('SELECT phone FROM users WHERE id = ?', [p[0].user_id]))[0][0]?.phone;
-    const valid = await verifyOTP(phone, otp, 'parcel_pickup', parseInt(parcelId));
+    let valid = await verifyOTP(phone, otp, 'parcel_pickup', parseInt(parcelId));
+    if (!valid && p[0].pickup_otp === otp) {
+      valid = true;
+    }
     if (!valid) return res.status(400).json({ error: 'Invalid or expired OTP.' });
     await pool.query('UPDATE parcels SET status = ? WHERE id = ?', ['picked_up', parcelId]);
     res.json({ message: 'Parcel picked up.' });
@@ -94,7 +97,10 @@ const verifyParcelDropOTP = async (req, res) => {
     const [p] = await pool.query('SELECT * FROM parcels WHERE id = ?', [parcelId]);
     if (!p.length) return res.status(404).json({ error: 'Parcel not found.' });
     const phone = p[0].recipient_phone || (await pool.query('SELECT phone FROM users WHERE id = ?', [p[0].user_id]))[0][0]?.phone;
-    const valid = await verifyOTP(phone, otp, 'parcel_drop', parseInt(parcelId));
+    let valid = await verifyOTP(phone, otp, 'parcel_drop', parseInt(parcelId));
+    if (!valid && p[0].drop_otp === otp) {
+      valid = true;
+    }
     if (!valid) return res.status(400).json({ error: 'Invalid or expired OTP.' });
     await pool.query('UPDATE parcels SET status = ?, delivered_at = NOW() WHERE id = ?', ['delivered', parcelId]);
     res.json({ message: 'Parcel delivered.' });
