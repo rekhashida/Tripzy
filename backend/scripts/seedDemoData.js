@@ -35,7 +35,7 @@ async function run() {
       const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [u.email]);
       if (existing.length > 0) {
         userIds[u.email] = existing[0].id;
-        await pool.query('UPDATE users SET name = ?, phone = ?, role = ?, wallet_balance = ? WHERE id = ?', [u.name, u.phone, u.role, u.wallet_balance, existing[0].id]);
+        await pool.query('UPDATE users SET name = ?, password = ?, phone = ?, role = ?, wallet_balance = ? WHERE id = ?', [u.name, u.password, u.phone, u.role, u.wallet_balance, existing[0].id]);
         console.log(`Updated user: ${u.email}`);
       } else {
         const [result] = await pool.query(
