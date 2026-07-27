@@ -13,7 +13,7 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-async function run() {
+async function run(shouldExit = true) {
   try {
     console.log('Connecting to database...');
     const passwordHash = await bcrypt.hash('TripzyDemoSecuredPass2026!', 10);
@@ -142,11 +142,19 @@ async function run() {
     }
 
     console.log('Seeding successfully completed!');
-    process.exit(0);
+    if (shouldExit) {
+      process.exit(0);
+    }
   } catch (err) {
     console.error('Seeding failed:', err.message);
-    process.exit(1);
+    if (shouldExit) {
+      process.exit(1);
+    }
   }
 }
 
-run();
+if (require.main === module) {
+  run(true);
+}
+
+module.exports = { seedDemoData: run };

@@ -44,4 +44,14 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Tripzy backend running on http://localhost:${PORT}`);
   console.log(`WebSocket server ready`);
+
+  // Auto-seed database at startup (updates demo accounts in cloud DB)
+  try {
+    const { seedDemoData } = require('./scripts/seedDemoData');
+    seedDemoData(false)
+      .then(() => console.log('Database auto-seeded successfully.'))
+      .catch((err) => console.error('Database auto-seed error:', err));
+  } catch (err) {
+    console.error('Failed to load auto-seeding module:', err);
+  }
 });
