@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiTruck, FiPlay, FiCheckCircle, FiMap, FiPower, FiMapPin, FiDollarSign, FiStar, FiUser } from 'react-icons/fi';
+import { FiTruck, FiPlay, FiCheckCircle, FiMap, FiPower, FiMapPin, FiDollarSign, FiStar, FiUser, FiMessageSquare } from 'react-icons/fi';
 import api from '../services/api';
-import { connectDriver, onNewRide, offNewRide, onRideAssigned, offRideAssigned } from '../services/socket';
+import { connectDriver, onNewRide, offNewRide, onRideAssigned, offRideAssigned, getSocket } from '../services/socket';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
@@ -26,6 +26,10 @@ export default function DriverDashboard() {
   const [locationStatus, setLocationStatus] = useState('');
   const [matchingRides, setMatchingRides] = useState([]);
   const [toasts, setToasts] = useState([]);
+  const [activeChatRideId, setActiveChatRideId] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newMsgText, setNewMsgText] = useState('');
+  const chatEndRef = useRef(null);
   const navigate = useNavigate();
 
   const addToast = (message, type = 'info') => {
@@ -84,6 +88,82 @@ export default function DriverDashboard() {
       offRideAssigned();
     };
   }, [dashboard?.driver?.id]);
+
+  const loadChats = async (rideId) => {
+    try {
+      const { data } = await api.get(`/rides/${rideId}/chats`);
+      setChatMessages(data);
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 200);
+    } catch (err) {
+      console.warn('Failed to load chat history:', err.message);
+    }
+  };
+
+  const sendChatMessage = (quickText = '') => {
+    const textToSubmit = quickText || newMsgText;
+    if (!textToSubmit.trim() || !activeChatRideId) return;
+
+    try {
+      const s = getSocket();
+      if (s) {
+        s.emit('send-message', {
+          rideId: activeChatRideId,
+          senderId: dashboard.driver.user_id,
+          senderName: dashboard.driver.name || 'Driver',
+          message: textToSubmit
+        });
+      }
+      if (!quickText) {
+        setNewMsgText('');
+      }
+    } catch (sockErr) {
+      console.warn('Socket message emit failed:', sockErr.message);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeChatRideId) return;
+
+    loadChats(activeChatRideId);
+
+    try {
+      const s = getSocket();
+      if (s) {
+        s.emit('join-ride', activeChatRideId);
+      }
+    } catch (err) {
+      console.warn('Failed to join chat room:', err.message);
+    }
+
+    const newMessageHandler = (msg) => {
+      setChatMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    };
+
+    let s = null;
+    try {
+      s = getSocket();
+      if (s) {
+        s.on('new-message', newMessageHandler);
+      }
+    } catch (sockErr) {
+      console.warn('Socket message listener failed to bind:', sockErr.message);
+    }
+
+    return () => {
+      if (s) {
+        s.emit('leave-ride', activeChatRideId);
+        s.off('new-message', newMessageHandler);
+      }
+    };
+  }, [activeChatRideId]);
 
   const updateAvailability = async (isOnline) => {
     try {
@@ -325,79 +405,180 @@ export default function DriverDashboard() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {rides.map((ride) => (
-              <div key={ride.id} className="list-item">
-                <div className="list-item-content">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 700, color: 'var(--primary-light)' }}>#{ride.id}</span>
-                    <Badge status={ride.status}>{statusLabel[ride.status] || ride.status}</Badge>
-                    {ride.vehicle_type && <Badge status="in_progress">{ride.vehicle_type}</Badge>}
+              <div key={ride.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
+                <div className="list-item">
+                  <div className="list-item-content">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, color: 'var(--primary-light)' }}>#{ride.id}</span>
+                      <Badge status={ride.status}>{statusLabel[ride.status] || ride.status}</Badge>
+                      {ride.vehicle_type && <Badge status="in_progress">{ride.vehicle_type}</Badge>}
+                    </div>
+
+                    <div className="list-item-title" style={{ marginTop: '0.75rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <FiMapPin style={{ color: 'var(--success)', marginTop: '0.25rem' }} />
+                        <span>{ride.pickup_address || 'Pickup location'}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <FiMapPin style={{ color: 'var(--danger)', marginTop: '0.25rem' }} />
+                        <span>{ride.drop_address || 'Drop location'}</span>
+                      </div>
+                    </div>
+
+                    <div className="list-item-subtitle" style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
+                      {ride.fare && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <FiDollarSign /> ₹{ride.fare}
+                        </span>
+                      )}
+                      {ride.distance_km && <span>{ride.distance_km} km</span>}
+                      {ride.duration_min && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <FiTruck /> {ride.duration_min} min
+                        </span>
+                      )}
+                      {ride.rider_name && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <FiUser /> {ride.rider_name}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="list-item-title" style={{ marginTop: '0.75rem' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                      <FiMapPin style={{ color: 'var(--success)', marginTop: '0.25rem' }} />
-                      <span>{ride.pickup_address || 'Pickup location'}</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <FiMapPin style={{ color: 'var(--danger)', marginTop: '0.25rem' }} />
-                      <span>{ride.drop_address || 'Drop location'}</span>
-                    </div>
-                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: '160px' }}>
+                    {(ride.status === 'pending' || ride.status === 'driver_assigned') && (
+                      <Button variant="primary" onClick={() => handleAcceptRide(ride.id)}>
+                        <FiPlay /> Accept
+                      </Button>
+                    )}
 
-                  <div className="list-item-subtitle" style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
-                    {ride.fare && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <FiDollarSign /> ₹{ride.fare}
-                      </span>
+                    {['driver_assigned', 'otp_verified', 'in_progress'].includes(ride.status) && (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Enter OTP"
+                          className="form-input"
+                          value={otpInputs[ride.id] || ''}
+                          onChange={(e) => setOtpInputs((prev) => ({ ...prev, [ride.id]: e.target.value }))}
+                          style={{ width: '100%', marginBottom: '0.5rem' }}
+                        />
+                        <Button
+                          variant="secondary"
+                          onClick={() => handleRideAction(ride.id, ride.status === 'in_progress' ? 'complete' : 'start')}
+                        >
+                          <FiCheckCircle /> {ride.status === 'in_progress' ? 'Complete Ride' : 'Start Ride'}
+                        </Button>
+                      </>
                     )}
-                    {ride.distance_km && <span>{ride.distance_km} km</span>}
-                    {ride.duration_min && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <FiTruck /> {ride.duration_min} min
-                      </span>
-                    )}
-                    {ride.rider_name && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <FiUser /> {ride.rider_name}
-                      </span>
+
+                    {(ride.status === 'in_progress' || ride.status === 'driver_assigned' || ride.status === 'otp_verified') && (
+                      <>
+                        <Link to={`/tracking/${ride.id}`}>
+                          <Button variant="outline" style={{ whiteSpace: 'nowrap', width: '100%' }}>
+                            <FiMap /> Track
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="outline"
+                          onClick={() => setActiveChatRideId(activeChatRideId === ride.id ? null : ride.id)}
+                          style={{ whiteSpace: 'nowrap', marginTop: '0.25rem', width: '100%' }}
+                        >
+                          <FiMessageSquare /> {activeChatRideId === ride.id ? 'Close Chat' : 'Chat with Rider'}
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: '160px' }}>
-                  {(ride.status === 'pending' || ride.status === 'driver_assigned') && (
-                    <Button variant="primary" onClick={() => handleAcceptRide(ride.id)}>
-                      <FiPlay /> Accept
-                    </Button>
-                  )}
+                {activeChatRideId === ride.id && (
+                  <Card style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-color)', marginBottom: '1.25rem', padding: '0.85rem' }}>
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--primary-light)' }}>
+                      💬 Chat with Rider
+                    </h4>
+                    
+                    <div style={{
+                      height: '150px',
+                      overflowY: 'auto',
+                      background: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      padding: '0.5rem',
+                      marginBottom: '0.75rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem'
+                    }}>
+                      {chatMessages.length === 0 ? (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '3.5rem' }}>
+                          No messages yet. Send a quick template message to your rider!
+                        </div>
+                      ) : (
+                        chatMessages.map((msg, index) => {
+                          const isMe = msg.sender_id === dashboard.driver.user_id;
+                          return (
+                            <div key={msg.id || index} style={{
+                              alignSelf: isMe ? 'flex-end' : 'flex-start',
+                              background: isMe ? 'var(--primary)' : 'var(--bg-secondary)',
+                              color: isMe ? '#fff' : 'var(--text-primary)',
+                              padding: '0.4rem 0.6rem',
+                              borderRadius: '8px',
+                              fontSize: '0.8rem',
+                              maxWidth: '80%',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
+                              textAlign: 'left'
+                            }}>
+                              <div style={{ fontWeight: 700, fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.15rem' }}>
+                                {isMe ? 'You' : (msg.sender_name || 'Rider')}
+                              </div>
+                              <div>{msg.message}</div>
+                              <div style={{ fontSize: '0.6rem', opacity: 0.6, marginTop: '0.2rem', textAlign: 'right' }}>
+                                {msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                      <div ref={chatEndRef} />
+                    </div>
 
-                  {['driver_assigned', 'otp_verified', 'in_progress'].includes(ride.status) && (
-                    <>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.75rem' }}>
+                      {['I have arrived at your location 🚘', 'Stuck in heavy traffic 🚦', 'On my way! 🏃‍♂️', 'Ok, got it! 👍'].map((reply) => (
+                        <button
+                          key={reply}
+                          onClick={() => sendChatMessage(reply)}
+                          style={{
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            color: '#34d399',
+                            border: '1px solid #10b981',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '12px',
+                            fontSize: '0.7rem',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {reply}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <input
                         type="text"
-                        placeholder="Enter OTP"
+                        placeholder="Type a message..."
                         className="form-input"
-                        value={otpInputs[ride.id] || ''}
-                        onChange={(e) => setOtpInputs((prev) => ({ ...prev, [ride.id]: e.target.value }))}
-                        style={{ width: '100%', marginBottom: '0.5rem' }}
+                        value={newMsgText}
+                        onChange={(e) => setNewMsgText(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
+                        style={{ flex: 1, padding: '0.4rem 0.6rem' }}
                       />
-                      <Button
-                        variant="secondary"
-                        onClick={() => handleRideAction(ride.id, ride.status === 'in_progress' ? 'complete' : 'start')}
-                      >
-                        <FiCheckCircle /> {ride.status === 'in_progress' ? 'Complete Ride' : 'Start Ride'}
+                      <Button variant="primary" onClick={() => sendChatMessage()} style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
+                        Send
                       </Button>
-                    </>
-                  )}
-
-                  {(ride.status === 'in_progress' || ride.status === 'driver_assigned' || ride.status === 'otp_verified') && (
-                    <Link to={`/tracking/${ride.id}`}>
-                      <Button variant="outline" style={{ whiteSpace: 'nowrap' }}>
-                        <FiMap /> Track
-                      </Button>
-                    </Link>
-                  )}
-                </div>
+                    </div>
+                  </Card>
+                )}
               </div>
             ))}
           </div>

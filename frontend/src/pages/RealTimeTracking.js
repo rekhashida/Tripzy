@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FiMap, FiNavigation, FiMapPin, FiClock, FiDollarSign, FiUser, FiPhone, FiCheckCircle } from 'react-icons/fi';
 import api from '../services/api';
@@ -26,6 +26,9 @@ export default function RealTimeTracking() {
   const [emergencyPhone, setEmergencyPhone] = useState('');
   const [showSmsModal, setShowSmsModal] = useState(false);
   const [userCoords, setUserCoords] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newMsgText, setNewMsgText] = useState('');
+  const chatEndRef = useRef(null);
 
   // Post-ride Rating states
   const navigate = useNavigate();
@@ -73,8 +76,21 @@ export default function RealTimeTracking() {
     }
   }, []);
 
+  const loadChats = async () => {
+    try {
+      const { data } = await api.get(`/rides/${rideId}/chats`);
+      setChatMessages(data);
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 200);
+    } catch (e) {
+      console.warn('Failed to load chat history:', e.message);
+    }
+  };
+
   useEffect(() => {
     loadRide();
+    loadChats();
     joinRideRoom(rideId);
     const handler = (loc) => {
       setDriverLoc(loc);
@@ -92,12 +108,23 @@ export default function RealTimeTracking() {
       loadRide();
       setTimeout(() => setPoolNotification(null), 6000);
     };
+
+    const newMessageHandler = (msg) => {
+      setChatMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    };
     
     let s = null;
     try {
       s = getSocket();
       if (s) {
         s.on('pool-joined', poolJoinedHandler);
+        s.on('new-message', newMessageHandler);
       }
     } catch (sockErr) {
       console.warn('Socket listener failed to bind:', sockErr.message);
@@ -109,6 +136,7 @@ export default function RealTimeTracking() {
       offStatusUpdate();
       if (s) {
         s.off('pool-joined', poolJoinedHandler);
+        s.off('new-message', newMessageHandler);
       }
     };
   }, [rideId]);
@@ -129,6 +157,28 @@ export default function RealTimeTracking() {
       return () => clearTimeout(timer);
     }
   }, [ride, rideId]);
+
+  const sendChatMessage = (quickText = '') => {
+    const textToSubmit = quickText || newMsgText;
+    if (!textToSubmit.trim()) return;
+
+    try {
+      const s = getSocket();
+      if (s) {
+        s.emit('send-message', {
+          rideId,
+          senderId: ride.user_id,
+          senderName: ride.user_name || 'Passenger',
+          message: textToSubmit
+        });
+      }
+      if (!quickText) {
+        setNewMsgText('');
+      }
+    } catch (sockErr) {
+      console.warn('Socket message emit failed:', sockErr.message);
+    }
+  };
 
   useEffect(() => {
     const computeEta = () => {
@@ -446,6 +496,95 @@ export default function RealTimeTracking() {
             />
             <Button variant="primary" onClick={() => setShowSmsModal(true)} disabled={!emergencyPhone} style={{ padding: '0.6rem', fontSize: '0.85rem' }}>
               Simulate Emergency Share
+            </Button>
+          </div>
+        </Card>
+
+        {/* Chat Widget */}
+        <Card style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-color)', marginBottom: '1.25rem', padding: '0.85rem' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.75rem 0', color: 'var(--primary-light)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            💬 Chat with Driver
+          </h3>
+          
+          <div style={{
+            height: '180px',
+            overflowY: 'auto',
+            background: 'var(--bg-tertiary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '6px',
+            padding: '0.5rem',
+            marginBottom: '0.75rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem'
+          }}>
+            {chatMessages.length === 0 ? (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '4rem' }}>
+                No messages yet. Start chatting with your driver.
+              </div>
+            ) : (
+              chatMessages.map((msg, index) => {
+                const isMe = msg.sender_id === ride.user_id;
+                return (
+                  <div key={msg.id || index} style={{
+                    alignSelf: isMe ? 'flex-end' : 'flex-start',
+                    background: isMe ? 'var(--primary)' : 'var(--bg-secondary)',
+                    color: isMe ? '#fff' : 'var(--text-primary)',
+                    padding: '0.4rem 0.6rem',
+                    borderRadius: '8px',
+                    fontSize: '0.8rem',
+                    maxWidth: '80%',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
+                    textAlign: 'left'
+                  }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.7rem', opacity: 0.8, marginBottom: '0.15rem' }}>
+                      {isMe ? 'You' : (msg.sender_name || 'Driver')}
+                    </div>
+                    <div>{msg.message}</div>
+                    <div style={{ fontSize: '0.6rem', opacity: 0.6, marginTop: '0.2rem', textAlign: 'right' }}>
+                      {msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Quick Replies */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.75rem' }}>
+            {['I am at the pickup spot 📍', 'Coming in 2 minutes 🏃‍♂️', 'Please wait for me 🙏', 'Thank you! 👍'].map((reply) => (
+              <button
+                key={reply}
+                onClick={() => sendChatMessage(reply)}
+                style={{
+                  background: 'rgba(99, 102, 241, 0.1)',
+                  color: 'var(--primary-light)',
+                  border: '1px solid var(--primary)',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '12px',
+                  fontSize: '0.7rem',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  transition: 'all 0.2s'
+                }}
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Input
+              type="text"
+              placeholder="Type a message..."
+              value={newMsgText}
+              onChange={(e) => setNewMsgText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
+              style={{ flex: 1, padding: '0.4rem 0.6rem' }}
+            />
+            <Button variant="primary" onClick={() => sendChatMessage()} style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
+              Send
             </Button>
           </div>
         </Card>

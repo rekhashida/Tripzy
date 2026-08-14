@@ -44,48 +44,62 @@ const estimateFare = async (req, res) => {
 // Create ride (book)
 const createRide = async (req, res) => {
   try {
-    const { pickup_lat, pickup_lng, drop_lat, drop_lng, pickup_address, drop_address, vehicle_type, luggage_size, is_pooling } = req.body;
+    const { pickup_lat, pickup_lng, drop_lat, drop_lng, pickup_address, drop_address, vehicle_type, luggage_size, is_pooling, scheduled_at } = req.body;
     const userId = req.user.id;
     const { distanceKm, durationMin } = await getDistanceAndDuration(pickup_lat, pickup_lng, drop_lat, drop_lng);
     const activeRequests = await getActiveRideRequests();
     const fareBreakdown = calculateRideFare(distanceKm, durationMin, vehicle_type, activeRequests, luggage_size);
+    
+    // MySQL format scheduled_at
+    const formattedScheduledAt = scheduled_at ? new Date(scheduled_at).toISOString().slice(0, 19).replace('T', ' ') : null;
+    const isFutureScheduled = formattedScheduledAt && (new Date(scheduled_at).getTime() - Date.now() > 10 * 60 * 1000);
+
     const [result] = await pool.query(
-      `INSERT INTO rides (user_id, pickup_lat, pickup_lng, drop_lat, drop_lng, pickup_address, drop_address, distance_km, duration_min, fare, vehicle_type, luggage_size, is_pooling)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, pickup_lat, pickup_lng, drop_lat, drop_lng, pickup_address || null, drop_address || null, distanceKm, durationMin, fareBreakdown.final, vehicle_type || 'sedan', luggage_size || null, is_pooling ? 1 : 0]
+      `INSERT INTO rides (user_id, pickup_lat, pickup_lng, drop_lat, drop_lng, pickup_address, drop_address, distance_km, duration_min, fare, vehicle_type, luggage_size, is_pooling, scheduled_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, pickup_lat, pickup_lng, drop_lat, drop_lng, pickup_address || null, drop_address || null, distanceKm, durationMin, fareBreakdown.final, vehicle_type || 'sedan', luggage_size || null, is_pooling ? 1 : 0, formattedScheduledAt]
     );
     const rideId = result.insertId;
     const pickupOtp = await saveOTP(req.user.phone, 'pickup', rideId);
     const dropOtp = await saveOTP(req.user.phone, 'drop', rideId);
     await pool.query('UPDATE rides SET pickup_otp = ?, drop_otp = ? WHERE id = ?', [pickupOtp, dropOtp, rideId]);
-    const drivers = await findNearbyDrivers(pickup_lat, pickup_lng, vehicle_type, 3);
+    
+    let driversCount = 0;
+    if (!isFutureScheduled) {
+      const drivers = await findNearbyDrivers(pickup_lat, pickup_lng, vehicle_type, 3);
+      driversCount = drivers.length;
 
-    // Notify nearby drivers via WebSocket
-    drivers.forEach((driver) => {
-      emitToDriver(driver.id, 'new-ride', {
-        rideId,
-        pickup_lat,
-        pickup_lng,
-        drop_lat,
-        drop_lng,
-        pickup_address,
-        drop_address,
-        fare: fareBreakdown.final,
-        distance_km: distanceKm,
-        duration_min: durationMin,
-        vehicle_type: vehicle_type || 'sedan',
-        luggage_size: luggage_size || null,
-        is_pooling: is_pooling ? 1 : 0
+      // Notify nearby drivers via WebSocket
+      drivers.forEach((driver) => {
+        emitToDriver(driver.id, 'new-ride', {
+          rideId,
+          pickup_lat,
+          pickup_lng,
+          drop_lat,
+          drop_lng,
+          pickup_address,
+          drop_address,
+          fare: fareBreakdown.final,
+          distance_km: distanceKm,
+          duration_min: durationMin,
+          vehicle_type: vehicle_type || 'sedan',
+          luggage_size: luggage_size || null,
+          is_pooling: is_pooling ? 1 : 0
+        });
       });
-    });
+    }
 
     res.status(201).json({
       rideId,
       fare: fareBreakdown.final,
       pickup_otp: pickupOtp,
       drop_otp: dropOtp,
-      nearbyDrivers: drivers.length,
-      message: 'Ride created. Share pickup OTP with driver to start.',
+      nearbyDrivers: driversCount,
+      isScheduled: !!isFutureScheduled,
+      scheduledAt: formattedScheduledAt,
+      message: isFutureScheduled 
+        ? 'Ride scheduled successfully. Drivers will be assigned closer to departure.' 
+        : 'Ride created. Share pickup OTP with driver to start.',
       surgeInfo: {
         isPeakHour: fareBreakdown.isPeakHour,
         isLateNight: fareBreakdown.isLateNight,
@@ -201,6 +215,78 @@ const cancelRide = async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 };
 
-module.exports = { estimateFare, createRide, assignDriver, verifyPickupOTP, verifyDropOTP, myRides, getRide, cancelRide };
+const getRideChats = async (req, res) => {
+  try {
+    const { rideId } = req.params;
+    const [rows] = await pool.query(
+      `SELECT c.id, c.ride_id, c.sender_id, c.message, c.created_at, u.name as sender_name 
+       FROM ride_chats c 
+       JOIN users u ON c.sender_id = u.id 
+       WHERE c.ride_id = ? 
+       ORDER BY c.created_at ASC`,
+      [rideId]
+    );
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
+const checkScheduledRides = async () => {
+  try {
+    const [scheduled] = await pool.query(
+      `SELECT * FROM rides 
+       WHERE status = 'pending' 
+         AND scheduled_at IS NOT NULL 
+         AND scheduled_at <= DATE_ADD(NOW(), INTERVAL 15 MINUTE)
+         AND scheduled_at >= DATE_SUB(NOW(), INTERVAL 30 MINUTE)`
+    );
+
+    if (scheduled.length === 0) return;
+    console.log(`[Auto-Dispatcher] Found ${scheduled.length} scheduled rides ready for dispatch.`);
+
+    for (const ride of scheduled) {
+      const drivers = await findNearbyDrivers(ride.pickup_lat, ride.pickup_lng, ride.vehicle_type, 3);
+      if (drivers.length > 0) {
+        console.log(`[Auto-Dispatcher] Dispatching scheduled ride #${ride.id} to ${drivers.length} drivers.`);
+        
+        drivers.forEach((driver) => {
+          emitToDriver(driver.id, 'new-ride', {
+            rideId: ride.id,
+            pickup_lat: ride.pickup_lat,
+            pickup_lng: ride.pickup_lng,
+            drop_lat: ride.drop_lat,
+            drop_lng: ride.drop_lng,
+            pickup_address: ride.pickup_address,
+            drop_address: ride.drop_address,
+            fare: ride.fare,
+            distance_km: ride.distance_km,
+            duration_min: ride.duration_min,
+            vehicle_type: ride.vehicle_type,
+            luggage_size: ride.luggage_size,
+            is_pooling: ride.is_pooling
+          });
+        });
+
+        try {
+          const { getIo } = require('../socket');
+          const io = getIo();
+          if (io) {
+            io.to(`ride:${ride.id}`).emit('status-update', { status: 'pending', searching: true });
+          }
+        } catch (sockErr) {
+          console.warn('Auto-dispatcher socket emit failed:', sockErr.message);
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[Auto-Dispatcher] Error during scheduled dispatch check:', e.message);
+  }
+};
+
+module.exports = { estimateFare, createRide, assignDriver, verifyPickupOTP, verifyDropOTP, myRides, getRide, cancelRide, getRideChats, checkScheduledRides };

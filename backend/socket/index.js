@@ -25,6 +25,33 @@ function setupSocket(io) {
       io.to(`ride:${rideId}`).emit('location-update', { latitude, longitude, at: new Date().toISOString() });
     });
 
+    socket.on('send-message', async (data) => {
+      const { rideId, senderId, senderName, message } = data;
+      try {
+        const pool = require('../config/db');
+        const [result] = await pool.query(
+          'INSERT INTO ride_chats (ride_id, sender_id, message) VALUES (?, ?, ?)',
+          [rideId, senderId, message]
+        );
+        io.to(`ride:${rideId}`).emit('new-message', {
+          id: result.insertId,
+          rideId,
+          senderId,
+          senderName,
+          message,
+          created_at: new Date().toISOString(),
+          read: false
+        });
+      } catch (err) {
+        console.error('Socket send-message failed:', err.message);
+      }
+    });
+
+    socket.on('message-read', (data) => {
+      const { rideId, messageId } = data;
+      io.to(`ride:${rideId}`).emit('message-read-receipt', { messageId, rideId });
+    });
+
     socket.on('disconnect', () => {});
   });
 

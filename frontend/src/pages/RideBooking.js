@@ -43,6 +43,8 @@ export default function RideBooking() {
   const [rideOtp, setRideOtp] = useState({ rideId: null, pickup_otp: null, drop_otp: null });
   const [surgeInfo, setSurgeInfo] = useState(null);
   const [clickTarget, setClickTarget] = useState('pickup');
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [scheduledTime, setScheduledTime] = useState('');
   const navigate = useNavigate();
 
   const estimate = async () => {
@@ -89,6 +91,11 @@ export default function RideBooking() {
       setMsgType('error');
       return;
     }
+    if (isScheduled && !scheduledTime) {
+      setMsg('Please select a date and time for your scheduled ride.');
+      setMsgType('error');
+      return;
+    }
     setLoading(true);
     setMsg('');
     try {
@@ -101,16 +108,28 @@ export default function RideBooking() {
         drop_address: drop.address,
         vehicle_type: vehicleType,
         luggage_size: luggageSize,
-        is_pooling: false
+        is_pooling: false,
+        scheduled_at: isScheduled ? scheduledTime : null
       });
-      setRideOtp({
-        rideId: data.rideId,
-        pickup_otp: data.pickup_otp,
-        drop_otp: data.drop_otp
-      });
-      setShowOtpModal(true);
-      setMsg(`Ride booked successfully! Ride ID: ${data.rideId}`);
-      setMsgType('success');
+      
+      if (data.isScheduled) {
+        setMsg(`Ride scheduled successfully for ${new Date(data.scheduledAt).toLocaleString()}!`);
+        setMsgType('success');
+        setPickup({ address: '', lat: null, lng: null });
+        setDrop({ address: '', lat: null, lng: null });
+        setIsScheduled(false);
+        setScheduledTime('');
+        setFare(null);
+      } else {
+        setRideOtp({
+          rideId: data.rideId,
+          pickup_otp: data.pickup_otp,
+          drop_otp: data.drop_otp
+        });
+        setShowOtpModal(true);
+        setMsg(`Ride booked successfully! Ride ID: ${data.rideId}`);
+        setMsgType('success');
+      }
     } catch (e) {
       setMsg(e.response?.data?.error || 'Booking failed. Please try again.');
       setMsgType('error');
@@ -361,6 +380,49 @@ export default function RideBooking() {
                 )}
               </div>
             </Card>
+
+            <div style={{
+              marginTop: '0.75rem',
+              marginBottom: '1rem',
+              padding: '0.85rem',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              textAlign: 'left'
+            }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                <input
+                  type="checkbox"
+                  checked={isScheduled}
+                  onChange={(e) => setIsScheduled(e.target.checked)}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--primary)' }}
+                />
+                📅 Schedule this ride for later
+              </label>
+
+              {isScheduled && (
+                <div style={{ marginTop: '0.75rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                    Select Departure Date & Time:
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={scheduledTime}
+                    onChange={(e) => setScheduledTime(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.4rem 0.6rem',
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-primary)',
+                      borderRadius: '6px',
+                      fontSize: '0.85rem'
+                    }}
+                  />
+                </div>
+              )}
+            </div>
 
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
               <Button

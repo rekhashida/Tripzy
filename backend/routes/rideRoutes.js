@@ -8,7 +8,8 @@ const {
   verifyDropOTP,
   myRides,
   getRide,
-  cancelRide
+  cancelRide,
+  getRideChats
 } = require('../controllers/ridesController');
 const router = express.Router();
 
@@ -16,6 +17,7 @@ router.post('/estimate', estimateFare);
 router.post('/', auth, createRide);
 router.get('/my', auth, myRides);
 router.get('/:rideId', auth, getRide);
+router.get('/:rideId/chats', auth, getRideChats);
 router.post('/:rideId/cancel', auth, cancelRide);
 router.put('/:rideId/assign', auth, assignDriver);
 router.post('/:rideId/verify-pickup', auth, verifyPickupOTP);
