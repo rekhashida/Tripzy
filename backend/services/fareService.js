@@ -1,21 +1,21 @@
-// Fare calculation: Base + Distance + Time + Surge + Luggage (from PDF)
-const BASE_FARE = 50;
-const PER_KM = 10;
-const PER_MIN = 1;
-const PEAK_HOUR_MORNING_START = 8.5;  // 8:30 AM
-const PEAK_HOUR_MORNING_END = 10;     // 10:00 AM
-const PEAK_HOUR_EVENING_START = 18;   // 6:00 PM
-const PEAK_HOUR_EVENING_END = 20.5;   // 8:30 PM
-const LATE_NIGHT_START = 22;          // 10:00 PM
-const LATE_NIGHT_END = 6;             // 6:00 AM
-const SURGE_MULTIPLIER_PEAK = 1.5;    // 50% surge during peak hours
-const SURGE_MULTIPLIER_LATE_NIGHT = 1.3; // 30% surge during late night
+// Fare calculation: Budget-friendly rates (Base + Distance + Time + Soft Surge + Moderate Luggage)
+const BASE_FARE = 30;                 // Reduced from 50 to 30 for budget friendliness
+const PER_KM = 7.5;                    // Reduced from 10 to 7.5 per km
+const PER_MIN = 0.5;                   // Reduced from 1 to 0.5 per minute
+const PEAK_HOUR_MORNING_START = 8.5;   // 8:30 AM
+const PEAK_HOUR_MORNING_END = 10;      // 10:00 AM
+const PEAK_HOUR_EVENING_START = 18;    // 6:00 PM
+const PEAK_HOUR_EVENING_END = 20.5;    // 8:30 PM
+const LATE_NIGHT_START = 22;           // 10:00 PM
+const LATE_NIGHT_END = 6;              // 6:00 AM
+const SURGE_MULTIPLIER_PEAK = 1.2;     // Softened peak surge from 1.5 (50%) down to 1.2 (20%)
+const SURGE_MULTIPLIER_LATE_NIGHT = 1.15; // Softened late night surge down to 1.15 (15%)
 
-// Luggage size multipliers
+// Moderate & Budget-friendly Luggage multipliers
 const LUGGAGE_MULTIPLIERS = {
   'small': 1.0,     // No extra charge
-  'medium': 1.5,    // 50% extra (price × 0.5 added)
-  'large': 1.8      // 80% extra (price × 0.8 added)
+  'medium': 1.1,    // 10% nominal fee
+  'large': 1.25     // 25% nominal fee
 };
 
 // Vehicle type multipliers (affect base/subtotal before surge)
@@ -134,9 +134,9 @@ function calculateRideFare(distanceKm, durationMin, vehicleType = 'sedan', activ
 }
 
 function calculateParcelFare(distanceKm, weightKg = 1) {
-  const base = 40;
-  const perKm = 8;
-  const perKg = 5;
+  const base = 25;   // Reduced from 40 to 25
+  const perKm = 5.5; // Reduced from 8 to 5.5 per km
+  const perKg = 3;   // Reduced from 5 to 3 per kg
   return Math.round(base + distanceKm * perKm + weightKg * perKg);
 }
 

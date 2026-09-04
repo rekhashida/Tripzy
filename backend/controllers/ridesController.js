@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-const { getDistanceAndDuration } = require('../services/mapsService');
+const { getDistanceAndDuration, calculateMultimodalRoute } = require('../services/mapsService');
 const { calculateRideFare, calculatePoolFareShare } = require('../services/fareService');
 const { findNearbyDrivers } = require('../services/matchingService');
 const { saveOTP, verifyOTP } = require('../services/otpService');
@@ -35,7 +35,8 @@ const estimateFare = async (req, res) => {
     const activeRequests = await getActiveRideRequests();
     const fare = calculateRideFare(distanceKm, durationMin, vehicle_type, activeRequests, luggage_size);
     const suggestions = getVehicleSuggestions(luggage_size);
-    res.json({ distanceKm, durationMin, fare: fare.final, breakdown: fare, activeRideRequests: activeRequests, suggestions });
+    const multimodal = calculateMultimodalRoute(distanceKm);
+    res.json({ distanceKm, durationMin, fare: fare.final, breakdown: fare, activeRideRequests: activeRequests, suggestions, multimodal });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -44,22 +45,28 @@ const estimateFare = async (req, res) => {
 // Create ride (book)
 const createRide = async (req, res) => {
   try {
-    const { pickup_lat, pickup_lng, drop_lat, drop_lng, pickup_address, drop_address, vehicle_type, luggage_size, is_pooling, scheduled_at } = req.body;
+    const { pickup_lat, pickup_lng, drop_lat, drop_lng, pickup_address, drop_address, vehicle_type, luggage_size, is_pooling, scheduled_at, is_ev, is_corporate } = req.body;
     const userId = req.user.id;
     const { distanceKm, durationMin } = await getDistanceAndDuration(pickup_lat, pickup_lng, drop_lat, drop_lng);
     const activeRequests = await getActiveRideRequests();
     const fareBreakdown = calculateRideFare(distanceKm, durationMin, vehicle_type, activeRequests, luggage_size);
     
-    // MySQL format scheduled_at
     const formattedScheduledAt = scheduled_at ? new Date(scheduled_at).toISOString().slice(0, 19).replace('T', ' ') : null;
     const isFutureScheduled = formattedScheduledAt && (new Date(scheduled_at).getTime() - Date.now() > 10 * 60 * 1000);
 
+    const co2Saved = (is_ev || vehicle_type === 'bike' || is_pooling) ? Math.round(distanceKm * 0.12 * 100) / 100 : 0.00;
+
     const [result] = await pool.query(
-      `INSERT INTO rides (user_id, pickup_lat, pickup_lng, drop_lat, drop_lng, pickup_address, drop_address, distance_km, duration_min, fare, vehicle_type, luggage_size, is_pooling, scheduled_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, pickup_lat, pickup_lng, drop_lat, drop_lng, pickup_address || null, drop_address || null, distanceKm, durationMin, fareBreakdown.final, vehicle_type || 'sedan', luggage_size || null, is_pooling ? 1 : 0, formattedScheduledAt]
+      `INSERT INTO rides (user_id, pickup_lat, pickup_lng, drop_lat, drop_lng, pickup_address, drop_address, distance_km, duration_min, fare, vehicle_type, luggage_size, is_pooling, scheduled_at, is_ev, is_corporate, co2_saved_kg)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, pickup_lat, pickup_lng, drop_lat, drop_lng, pickup_address || null, drop_address || null, distanceKm, durationMin, fareBreakdown.final, vehicle_type || 'sedan', luggage_size || null, is_pooling ? 1 : 0, formattedScheduledAt, is_ev ? 1 : 0, is_corporate ? 1 : 0, co2Saved]
     );
     const rideId = result.insertId;
+
+    if (co2Saved > 0) {
+      await pool.query('UPDATE users SET total_co2_saved_kg = total_co2_saved_kg + ? WHERE id = ?', [co2Saved, userId]);
+    }
+
     const pickupOtp = await saveOTP(req.user.phone, 'pickup', rideId);
     const dropOtp = await saveOTP(req.user.phone, 'drop', rideId);
     await pool.query('UPDATE rides SET pickup_otp = ?, drop_otp = ? WHERE id = ?', [pickupOtp, dropOtp, rideId]);
@@ -168,6 +175,26 @@ const verifyDropOTP = async (req, res) => {
     if (!valid) return res.status(400).json({ error: 'Invalid or expired OTP.' });
     await pool.query('UPDATE rides SET status = ?, completed_at = NOW() WHERE id = ?', ['completed', rideId]);
     await pool.query('UPDATE drivers SET is_available = 1, total_trips = total_trips + 1 WHERE id = ?', [ride.driver_id]);
+    
+    const driverShare = parseFloat(ride.fare || 0) * 0.85;
+    const [drv] = await pool.query('SELECT user_id FROM drivers WHERE id = ?', [ride.driver_id]);
+    if (drv.length > 0) {
+      const driverUserId = drv[0].user_id;
+      await pool.query('UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?', [driverShare, driverUserId]);
+      
+      const [driverUser] = await pool.query('SELECT wallet_balance FROM users WHERE id = ?', [driverUserId]);
+      const currentBalance = parseFloat(driverUser[0].wallet_balance);
+      if (currentBalance >= 500) {
+        const settleAmount = 500;
+        const bankRef = `settle_ref_${Date.now()}`;
+        await pool.query('UPDATE users SET wallet_balance = wallet_balance - ? WHERE id = ?', [settleAmount, driverUserId]);
+        await pool.query(
+          'INSERT INTO driver_settlements (driver_id, amount, status, bank_reference) VALUES (?, ?, ?, ?)',
+          [ride.driver_id, settleAmount, 'processed', bankRef]
+        );
+      }
+    }
+
     res.json({ message: 'Trip completed.' });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -212,9 +239,6 @@ const cancelRide = async (req, res) => {
     await pool.query('UPDATE rides SET status = ? WHERE id = ?', ['cancelled', req.params.rideId]);
     if (r[0].driver_id) await pool.query('UPDATE drivers SET is_available = 1 WHERE id = ?', [r[0].driver_id]);
     res.json({ message: 'Ride cancelled.' });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -285,8 +309,83 @@ const checkScheduledRides = async () => {
       }
     }
   } catch (e) {
-    console.error('[Auto-Dispatcher] Error during scheduled dispatch check:', e.message);
+    console.error('[Auto-Dispatcher Error]:', e.message);
   }
 };
 
-module.exports = { estimateFare, createRide, assignDriver, verifyPickupOTP, verifyDropOTP, myRides, getRide, cancelRide, getRideChats, checkScheduledRides };
+const submitBid = async (req, res) => {
+  try {
+    const { rideId } = req.params;
+    const { bid_amount } = req.body;
+    const driverId = req.user.id;
+
+    if (!bid_amount) return res.status(400).json({ error: 'Bid amount is required.' });
+
+    await pool.query(
+      'INSERT INTO ride_bids (ride_id, driver_id, bid_amount, status) VALUES (?, ?, ?, ?)',
+      [rideId, driverId, bid_amount, 'pending']
+    );
+
+    res.status(201).json({ message: `Counter bid of ₹${bid_amount} submitted successfully.` });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
+const getBidsForRide = async (req, res) => {
+  try {
+    const { rideId } = req.params;
+    const [bids] = await pool.query(
+      `SELECT b.*, u.name as driver_name, u.phone as driver_phone, d.vehicle_type, d.rating as driver_rating
+       FROM ride_bids b
+       JOIN drivers d ON b.driver_id = d.id
+       JOIN users u ON d.user_id = u.id
+       WHERE b.ride_id = ? ORDER BY b.created_at DESC`,
+      [rideId]
+    );
+    res.json(bids);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
+const acceptBid = async (req, res) => {
+  try {
+    const { rideId } = req.params;
+    const { bidId } = req.body;
+
+    const [bids] = await pool.query('SELECT * FROM ride_bids WHERE id = ? AND ride_id = ?', [bidId, rideId]);
+    if (!bids.length) return res.status(404).json({ error: 'Bid not found.' });
+
+    const selectedBid = bids[0];
+
+    // Update ride fare to agreed bid fare & assign driver
+    await pool.query(
+      'UPDATE rides SET fare = ?, driver_id = ?, status = ? WHERE id = ?',
+      [selectedBid.bid_amount, selectedBid.driver_id, 'driver_assigned', rideId]
+    );
+
+    await pool.query('UPDATE ride_bids SET status = ? WHERE id = ?', ['accepted', bidId]);
+    await pool.query('UPDATE ride_bids SET status = ? WHERE ride_id = ? AND id != ?', ['rejected', rideId, bidId]);
+
+    res.json({ message: `Agreed on fare ₹${selectedBid.bid_amount}. Driver assigned!` });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
+module.exports = {
+  estimateFare,
+  createRide,
+  myRides,
+  getRide,
+  cancelRide,
+  acceptRide,
+  updateLocation,
+  verifyPickupOTP,
+  verifyDropOTP,
+  checkScheduledRides,
+  submitBid,
+  getBidsForRide,
+  acceptBid
+};

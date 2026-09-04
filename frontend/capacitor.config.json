@@ -1,0 +1,17 @@
+{
+  "appId": "com.tripzy.mobility",
+  "appName": "Tripzy",
+  "webDir": "build",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "Geolocation": {
+      "permissions": ["location"]
+    }
+  }
+}

@@ -12,6 +12,8 @@ export default function ParcelDelivery() {
   const [drop, setDrop] = useState({ address: '', lat: null, lng: null });
   const [recipientName, setRecipientName] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
+  const [extraStops, setExtraStops] = useState([]);
+  const [optimizeTsp, setOptimizeTsp] = useState(true);
   const [weightKg, setWeightKg] = useState(1);
   const [fare, setFare] = useState(null);
   const [distance, setDistance] = useState(null);
@@ -22,6 +24,30 @@ export default function ParcelDelivery() {
   const [loading, setLoading] = useState(false);
   const [clickTarget, setClickTarget] = useState('pickup');
   const navigate = useNavigate();
+
+  const addStopField = () => {
+    if (extraStops.length >= 4) return;
+    setExtraStops([...extraStops, { address: '', lat: null, lng: null, recipient_name: '', recipient_phone: '' }]);
+  };
+
+  const removeStopField = (idx) => {
+    setExtraStops(extraStops.filter((_, i) => i !== idx));
+  };
+
+  const updateStopField = (idx, field, value) => {
+    const updated = [...extraStops];
+    if (field === 'place') {
+      updated[idx] = { ...updated[idx], address: value.address, lat: value.lat, lng: value.lng };
+    } else {
+      updated[idx] = { ...updated[idx], [field]: value };
+    }
+    setExtraStops(updated);
+  };
+
+  const allStops = [
+    ...extraStops.filter(s => s.lat && s.lng),
+    ...(drop.lat && drop.lng ? [{ address: drop.address, lat: drop.lat, lng: drop.lng, recipient_name: recipientName, recipient_phone: recipientPhone }] : [])
+  ];
 
   const estimate = async () => {
     if (!pickup.lat || !pickup.lng || !drop.lat || !drop.lng) {
@@ -37,13 +63,15 @@ export default function ParcelDelivery() {
         pickup_lng: pickup.lng,
         drop_lat: drop.lat,
         drop_lng: drop.lng,
-        weight_kg: weightKg
+        weight_kg: weightKg,
+        stops: allStops,
+        optimize_tsp: optimizeTsp
       });
       setFare(data.fare);
       setDistance(data.distanceKm);
       setDuration(data.durationMin);
       setSurgeInfo(data.breakdown);
-      setMsg(`Estimated fare: ₹${data.fare} | Distance: ${data.distanceKm} km | Duration: ~${data.durationMin} min`);
+      setMsg(`Estimated fare: ₹${data.fare} | Distance: ${data.distanceKm} km | Duration: ~${data.durationMin} min ${optimizeTsp ? '| ⚡ TSP Route Optimized' : ''}`);
       setMsgType('success');
     } catch (e) {
       setMsg(e.response?.data?.error || 'Failed to estimate fare. Please try again.');
@@ -76,7 +104,9 @@ export default function ParcelDelivery() {
         drop_address: drop.address,
         recipient_name: recipientName,
         recipient_phone: recipientPhone,
-        weight_kg: weightKg
+        weight_kg: weightKg,
+        stops: allStops,
+        optimize_tsp: optimizeTsp
       });
       setFare(data.fare);
       setMsg(`Parcel created successfully! ID: ${data.parcelId}. Fare: ₹${data.fare}. Pickup OTP: ${data.pickup_otp}, Drop OTP: ${data.drop_otp}`);
@@ -174,15 +204,78 @@ export default function ParcelDelivery() {
             />
           </div>
 
+          {/* Extra Waypoints / Stops */}
+          {extraStops.map((stop, idx) => (
+            <div key={idx} style={{ background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)' }}>📍 Stop #{idx + 1} Waypoint</span>
+                <button type="button" onClick={() => removeStopField(idx)} style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.75rem' }}>Remove ✕</button>
+              </div>
+              <MapAutocomplete
+                onPlaceSelected={(place) => updateStopField(idx, 'place', place)}
+                placeholder={`Search Stop #${idx + 1} address...`}
+                value={stop.address}
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <input 
+                  type="text" 
+                  placeholder="Stop Recipient Name" 
+                  value={stop.recipient_name} 
+                  onChange={(e) => updateStopField(idx, 'recipient_name', e.target.value)}
+                  style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '0.35rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }} 
+                />
+                <input 
+                  type="tel" 
+                  placeholder="Stop Recipient Phone" 
+                  value={stop.recipient_phone} 
+                  onChange={(e) => updateStopField(idx, 'recipient_phone', e.target.value)}
+                  style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '0.35rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }} 
+                />
+              </div>
+            </div>
+          ))}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {extraStops.length < 4 && (
+              <button 
+                type="button" 
+                onClick={addStopField} 
+                style={{ background: 'var(--bg-glass)', border: '1px dashed var(--primary)', color: 'var(--primary)', padding: '0.35rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}
+              >
+                + Add Multi-Drop Waypoint
+              </button>
+            )}
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={optimizeTsp} 
+                onChange={(e) => setOptimizeTsp(e.target.checked)} 
+              />
+              ⚡ TSP Route Optimize
+            </label>
+          </div>
+
+          {/* Inter-City & Advance Scheduling Banner */}
+          <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--primary)', borderRadius: '8px', padding: '0.75rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary-light)', cursor: 'pointer' }}>
+              <input type="checkbox" defaultChecked />
+              🚚 Inter-City Delivery Mode (Schedule up to 7 days advance)
+            </label>
+            <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Supports inter-city cargo shipping between major hubs with guaranteed driver dispatch.
+            </div>
+          </div>
+
           <div>
             <label className="form-label" style={{ fontSize: '0.85rem' }}>
               <FiMapPin style={{ marginRight: '0.35rem' }} />
-              Delivery Location
+              Final Delivery Destination
             </label>
             <MapAutocomplete
               onPlaceSelected={(place) => setDrop(place)}
               onFocus={() => setClickTarget('drop')}
-              placeholder="Search delivery location..."
+              placeholder="Search final destination location..."
               value={drop.address}
             />
           </div>

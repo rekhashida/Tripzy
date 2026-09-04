@@ -36,6 +36,20 @@ const WingedTaxiLogo = () => (
   </svg>
 );
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function Nav() {
   const { user, logout, fetchProfile } = useAuth();
   const { lang, changeLanguage, t } = useLanguage();
@@ -61,20 +75,71 @@ export default function Nav() {
       return;
     }
     setTopupLoading(true);
-    setTopupMsg('');
+    setTopupMsg('Initializing gateway...');
+    setTopupMsgType('info');
     try {
-      await api.post('/payments/topup', { amount: amt });
-      setTopupMsg(`Successfully added ₹${amt} to your wallet!`);
-      setTopupMsgType('success');
-      await fetchProfile();
-      setTimeout(() => {
-        setShowTopupModal(false);
-        setTopupMsg('');
-      }, 1500);
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Failed to load Razorpay SDK.');
+      }
+
+      const { data } = await api.post('/payments/create-order', {
+        amount: amt
+      });
+
+      const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'Tripzy Wallet Deposit',
+        description: `Top up ₹${amt} to simulated wallet`,
+        order_id: data.orderId,
+        handler: async function (response) {
+          setTopupLoading(true);
+          setTopupMsg('Confirming deposit...');
+          setTopupMsgType('info');
+          try {
+            await api.post('/payments/verify', {
+              razorpay_order_id: response.razorpay_order_id || data.orderId,
+              razorpay_payment_id: response.razorpay_payment_id || `pay_mock_${Date.now()}`,
+              razorpay_signature: response.razorpay_signature || ''
+            });
+            setTopupMsg(`Successfully added ₹${amt} to your wallet! 🎉`);
+            setTopupMsgType('success');
+            await fetchProfile();
+            setTimeout(() => {
+              setShowTopupModal(false);
+              setTopupMsg('');
+            }, 1500);
+          } catch (verifyErr) {
+            setTopupMsg(verifyErr.response?.data?.error || 'Deposit verification failed.');
+            setTopupMsgType('error');
+          } finally {
+            setTopupLoading(false);
+          }
+        },
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+          contact: user?.phone || ''
+        },
+        theme: {
+          color: '#0f4c9c'
+        },
+        modal: {
+          ondismiss: function () {
+            setTopupLoading(false);
+            setTopupMsg('Top-up cancelled.');
+            setTopupMsgType('info');
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
     } catch (e) {
-      setTopupMsg(e.response?.data?.error || 'Failed to top up wallet');
+      setTopupMsg(e.response?.data?.error || e.message || 'Deposit failed.');
       setTopupMsgType('error');
-    } finally {
       setTopupLoading(false);
     }
   };
@@ -121,6 +186,29 @@ export default function Nav() {
         <div className="spacer" />
         
         <div className="nav-links" style={{ alignItems: 'center' }}>
+          {/* Multi-Language Selector Dropdown */}
+          <select 
+            value={lang} 
+            onChange={(e) => setLang(e.target.value)}
+            style={{
+              background: 'var(--bg-glass)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '16px',
+              padding: '0.25rem 0.5rem',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            <option value="en">🌐 English</option>
+            <option value="hi">🇮🇳 हिंदी (Hindi)</option>
+            <option value="gu">🇮🇳 ગુજરાતી (Gujarati)</option>
+            <option value="mr">🇮🇳 मराठी (Marathi)</option>
+            <option value="ta">🇮🇳 தமிழ் (Tamil)</option>
+            <option value="te">🇮🇳 తెలుగు (Telugu)</option>
+          </select>
+
           {user ? (
             <>
               {user.role !== 'driver' && (

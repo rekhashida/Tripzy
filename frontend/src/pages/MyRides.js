@@ -35,6 +35,67 @@ export default function MyRides() {
     return <Loading message="Loading your rides..." />;
   }
 
+  const printGstInvoice = (ride) => {
+    const gstRate = 0.05;
+    const fare = parseFloat(ride.fare || 0);
+    const baseFare = (fare / (1 + gstRate)).toFixed(2);
+    const gstAmount = (fare - baseFare).toFixed(2);
+
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <html>
+        <head>
+          <title>Tripzy GST Tax Invoice - Ride #${ride.id}</title>
+          <style>
+            body { font-family: sans-serif; padding: 2rem; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0f4c9c; padding-bottom: 1rem; }
+            .title { font-size: 1.5rem; font-weight: bold; color: #0f4c9c; }
+            .table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+            .table th, .table td { border: 1px solid #cbd5e1; padding: 0.75rem; text-align: left; }
+            .table th { background: #f1f5f9; }
+            .footer { margin-top: 2rem; font-size: 0.85rem; color: #64748b; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="title">🚕 Tripzy Mobility Solutions</div>
+              <div>GSTIN: 24AAACT9999Z1Z5 | SAC Code: 996412</div>
+              <div>Official Tax Invoice / Bill of Supply</div>
+            </div>
+            <div style="text-align: right;">
+              <h3>Invoice #${ride.id}</h3>
+              <div>Date: ${new Date(ride.created_at || Date.now()).toLocaleDateString()}</div>
+            </div>
+          </div>
+          <div style="margin-top: 1.5rem;">
+            <strong>Pickup:</strong> ${ride.pickup_address || `${ride.pickup_lat}, ${ride.pickup_lng}`}<br/>
+            <strong>Drop:</strong> ${ride.drop_address || `${ride.drop_lat}, ${ride.drop_lng}`}<br/>
+            <strong>Vehicle:</strong> ${ride.vehicle_type ? ride.vehicle_type.toUpperCase() : 'Standard Taxi'}
+          </div>
+          <table class="table">
+            <thead>
+              <tr><th>Description</th><th>Base Fare</th><th>GST (5%)</th><th>Total Amount</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Passenger Ride Services (Ride #${ride.id})</td>
+                <td>₹${baseFare}</td>
+                <td>₹${gstAmount}</td>
+                <td><strong>₹${fare.toFixed(2)}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="footer">
+            Thank you for riding with Tripzy! This is a computer-generated tax invoice.
+          </div>
+          <script>window.print();</script>
+        </body>
+      </html>
+    `);
+    win.document.close();
+  };
+
   return (
     <>
       <Card>
@@ -98,23 +159,26 @@ export default function MyRides() {
                     {ride.vehicle_type && (
                       <Badge status="in_progress">{ride.vehicle_type}</Badge>
                     )}
+                    {ride.is_ev === 1 && (
+                      <Badge status="completed">🌿 EV Ride</Badge>
+                    )}
                   </div>
                   
-                  <div className="list-item-title" style={{ marginBottom: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                      <FiMapPin style={{ color: 'var(--success)', marginTop: '0.25rem' }} />
-                      <span>{ride.pickup_address || 'Pickup location'}</span>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                      <span style={{ color: 'var(--success)' }}>●</span>
+                      <span style={{ fontSize: '0.9rem' }}>{ride.pickup_address || `${ride.pickup_lat}, ${ride.pickup_lng}`}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
-                      <FiMapPin style={{ color: 'var(--danger)', marginTop: '0.25rem' }} />
-                      <span>{ride.drop_address || 'Drop location'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ color: 'var(--danger)' }}>●</span>
+                      <span style={{ fontSize: '0.9rem' }}>{ride.drop_address || `${ride.drop_lat}, ${ride.drop_lng}`}</span>
                     </div>
                   </div>
 
-                  <div className="list-item-subtitle" style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
                     {ride.fare && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <FiDollarSign /> ₹{ride.fare}
+                      <span style={{ fontWeight: 700, color: 'var(--primary-light)' }}>
+                        <FiDollarSign style={{ display: 'inline' }} /> ₹{ride.fare}
                       </span>
                     )}
                     {ride.distance_km && (
@@ -148,11 +212,16 @@ export default function MyRides() {
                     </Link>
                   )}
                   {ride.status === 'completed' && (
-                    <Link to={`/tracking/${ride.id}`}>
-                      <Button variant="outline" style={{ whiteSpace: 'nowrap' }}>
-                        View Details
+                    <>
+                      <Link to={`/tracking/${ride.id}`}>
+                        <Button variant="outline" style={{ whiteSpace: 'nowrap' }}>
+                          View Details
+                        </Button>
+                      </Link>
+                      <Button variant="outline" onClick={() => printGstInvoice(ride)} style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+                        GST Invoice 📄
                       </Button>
-                    </Link>
+                    </>
                   )}
                 </div>
               </div>

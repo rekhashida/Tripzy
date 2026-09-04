@@ -30,6 +30,11 @@ export default function DriverDashboard() {
   const [chatMessages, setChatMessages] = useState([]);
   const [newMsgText, setNewMsgText] = useState('');
   const chatEndRef = useRef(null);
+  const [settlements, setSettlements] = useState([]);
+  const [kycUploading, setKycUploading] = useState(false);
+  const [kycMsg, setKycMsg] = useState('');
+  const [kycMsgType, setKycMsgType] = useState('info');
+  const [kycFiles, setKycFiles] = useState({ license: '', rc: '', insurance: '' });
   const navigate = useNavigate();
 
   const addToast = (message, type = 'info') => {
@@ -59,9 +64,51 @@ export default function DriverDashboard() {
     }
   };
 
+  const loadSettlements = async () => {
+    try {
+      const { data } = await api.get('/driver/settlements');
+      setSettlements(data || []);
+    } catch (err) {
+      console.warn('Failed to load settlements:', err.message);
+    }
+  };
+
+  const handleFileChange = (e, field) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setKycFiles((prev) => ({ ...prev, [field]: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmitKYC = async () => {
+    if (!kycFiles.license || !kycFiles.rc || !kycFiles.insurance) {
+      setKycMsg('Please upload all 3 documents: License, RC, and Insurance.');
+      setKycMsgType('error');
+      return;
+    }
+    setKycUploading(true);
+    setKycMsg('AI OCR Engine scanning uploaded documents...');
+    setKycMsgType('info');
+    try {
+      const { data } = await api.post('/driver/kyc', kycFiles);
+      setKycMsg(data.message);
+      setKycMsgType(data.kyc_status === 'verified' ? 'success' : 'error');
+      await loadDashboard();
+    } catch (err) {
+      setKycMsg(err.response?.data?.error || 'KYC submission failed.');
+      setKycMsgType('error');
+    } finally {
+      setKycUploading(false);
+    }
+  };
+
   useEffect(() => {
     loadDashboard();
     loadMatchingRides();
+    loadSettlements();
   }, []);
 
   useEffect(() => {
@@ -311,11 +358,135 @@ export default function DriverDashboard() {
             <div className="stat-value">₹{parseFloat(stats.earnings || 0).toFixed(2)}</div>
             <div className="stat-label">Earnings</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.activeRides}</div>
-            <div className="stat-label">Active Assignments</div>
+          <div className="stat-card" style={{ border: '1px solid var(--success)', background: 'rgba(16, 185, 129, 0.08)' }}>
+            <div className="stat-value" style={{ color: 'var(--success)' }}>
+              ⛽ ₹{parseFloat(driver.fuel_cashback_balance || 0).toFixed(2)}
+            </div>
+            <div className="stat-label" style={{ color: 'var(--success)' }}>Fuel Cashback Wallet</div>
           </div>
         </div>
+
+        {/* Driver Leaderboard & Incentive Badges */}
+        <Card style={{ marginTop: '1.25rem', marginBottom: '1.25rem', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(245, 158, 11, 0.08))', border: '1px solid var(--primary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--primary-light)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              🏆 Driver Weekly Incentive Leaderboard
+            </h3>
+            <span style={{ fontSize: '0.75rem', background: 'var(--primary)', color: '#fff', padding: '0.2rem 0.6rem', borderRadius: '12px', fontWeight: 700 }}>
+              ⭐ Rank #1 Captain
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            <span style={{ background: 'var(--bg-glass)', border: '1px solid var(--warning)', color: 'var(--warning)', padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
+              🏅 Gold Captain Badge
+            </span>
+            <span style={{ background: 'var(--bg-glass)', border: '1px solid var(--success)', color: 'var(--success)', padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
+              ⚡ 100% Acceptance Rate
+            </span>
+            <span style={{ background: 'var(--bg-glass)', border: '1px solid var(--primary)', color: 'var(--primary-light)', padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
+              ⛽ ₹150 Fuel Cashback Active
+            </span>
+          </div>
+
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            Complete 5 more trips this week to unlock ₹500 Weekly Bonus Multiplier!
+          </div>
+        </Card>
+
+        {/* KYC Onboarding Card */}
+        {dashboard?.driver && (
+          <Card style={{ 
+            marginTop: '1.5rem', 
+            marginBottom: '1.5rem', 
+            borderLeft: '4px solid ' + (dashboard.driver.kyc_status === 'verified' ? 'var(--success)' : dashboard.driver.kyc_status === 'rejected' ? 'var(--danger)' : 'var(--warning)'),
+            background: 'var(--bg-secondary)'
+          }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              📄 KYC Document Verification status: 
+              <Badge status={dashboard.driver.kyc_status === 'verified' ? 'completed' : dashboard.driver.kyc_status === 'rejected' ? 'cancelled' : dashboard.driver.kyc_status === 'pending' ? 'in_progress' : 'pending'}>
+                {dashboard.driver.kyc_status === 'verified' ? 'Verified ✓' : dashboard.driver.kyc_status === 'rejected' ? 'Rejected ✗' : dashboard.driver.kyc_status === 'pending' ? 'Pending Review ⌛' : 'Action Required ⚠️'}
+              </Badge>
+            </h2>
+            
+            <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+              Upload your documents below to complete onboarding and verify your credentials using our automated AI OCR scanner.
+            </p>
+
+            {kycMsg && (
+              <div className={`alert alert-${kycMsgType === 'success' ? 'success' : kycMsgType === 'error' ? 'error' : 'info'}`} style={{ marginBottom: '1rem', fontSize: '0.85rem' }}>
+                {kycMsg}
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ background: 'var(--bg-card)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Driver License (DL) Image</label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => handleFileChange(e, 'license')} 
+                  disabled={dashboard.driver.kyc_status === 'verified' || kycUploading}
+                  style={{ fontSize: '0.75rem', width: '100%', color: 'var(--text-muted)' }} 
+                />
+                {dashboard.driver.license_url && (
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--success)' }}>
+                    ✓ DL Document Logged
+                  </div>
+                )}
+              </div>
+
+              <div style={{ background: 'var(--bg-card)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Vehicle Registration (RC)</label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => handleFileChange(e, 'rc')} 
+                  disabled={dashboard.driver.kyc_status === 'verified' || kycUploading}
+                  style={{ fontSize: '0.75rem', width: '100%', color: 'var(--text-muted)' }} 
+                />
+                {dashboard.driver.rc_url && (
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--success)' }}>
+                    ✓ RC Document Logged
+                  </div>
+                )}
+              </div>
+
+              <div style={{ background: 'var(--bg-card)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Vehicle Insurance Image</label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => handleFileChange(e, 'insurance')} 
+                  disabled={dashboard.driver.kyc_status === 'verified' || kycUploading}
+                  style={{ fontSize: '0.75rem', width: '100%', color: 'var(--text-muted)' }} 
+                />
+                {dashboard.driver.insurance_url && (
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--success)' }}>
+                    ✓ Insurance Logged
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {dashboard.driver.kyc_status !== 'verified' && (
+              <Button 
+                variant="primary" 
+                onClick={handleSubmitKYC} 
+                disabled={kycUploading || !kycFiles.license || !kycFiles.rc || !kycFiles.insurance}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+              >
+                {kycUploading ? 'Running AI OCR Scanning...' : 'Scan & Submit Documents'}
+              </Button>
+            )}
+
+            {dashboard.driver.kyc_status === 'verified' && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--success)', fontWeight: 600 }}>
+                🎉 Documents verified. Your driver profile is fully active!
+              </div>
+            )}
+          </Card>
+        )}
 
         <div style={{ margin: '2rem 0' }}>
           <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Earnings (Last 6 Months)</h2>
@@ -333,6 +504,51 @@ export default function DriverDashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+
+        {/* Payout Settlements Ledger */}
+        <div style={{ margin: '2rem 0' }}>
+          <h2 style={{ marginBottom: '0.75rem', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            💳 Bank Settlement Payouts (Threshold: ₹500)
+          </h2>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            Once your wallet exceeds ₹500, a simulated payout to your bank account is triggered automatically.
+          </p>
+          
+          {settlements.length === 0 ? (
+            <div style={{ padding: '1.5rem', background: 'var(--bg-secondary)', borderRadius: '8px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', border: '1px dashed var(--border-color)' }}>
+              No bank settlements processed yet. Complete more rides to hit the ₹500 threshold!
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {settlements.map((s) => (
+                <div key={s.id} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '8px'
+                }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)' }}>
+                      ₹{parseFloat(s.amount).toFixed(2)} Transfer
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                      Ref: {s.bank_reference}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <Badge status="completed">PROCESSED</Badge>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                      {new Date(s.created_at).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <Card style={{ marginBottom: '1.5rem' }}>
@@ -373,16 +589,35 @@ export default function DriverDashboard() {
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '160px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '180px' }}>
                     <Button variant="primary" onClick={() => handleAcceptRide(ride.id)}>
-                      <FiPlay /> Accept
+                      <FiPlay /> Accept (₹{ride.fare})
                     </Button>
-                    <Button variant="outline" onClick={() => {
-                      setOtpInputs((prev) => ({ ...prev, [ride.id]: '' }));
-                      addToast(`Ride #${ride.id} selected. Enter OTP from rider to start.`);
-                    }}>
-                      View Details
-                    </Button>
+                    <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                      <input 
+                        type="number" 
+                        placeholder="Counter ₹" 
+                        id={`counter_${ride.id}`}
+                        style={{ width: '80px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '0.3rem 0.4rem', fontSize: '0.75rem' }} 
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="small" 
+                        onClick={async () => {
+                          const val = document.getElementById(`counter_${ride.id}`)?.value;
+                          if (!val) return alert('Enter counter bid amount!');
+                          try {
+                            await api.post(`/rides/${ride.id}/bids`, { bid_amount: parseFloat(val) });
+                            addToast(`Submitted ₹${val} counter-bid for Ride #${ride.id}!`);
+                          } catch (e) {
+                            alert(e.response?.data?.error || 'Bid submission failed');
+                          }
+                        }}
+                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.5rem' }}
+                      >
+                        🏷️ Bid
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

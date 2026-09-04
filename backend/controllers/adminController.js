@@ -82,4 +82,33 @@ const sendInactivityReminders = async (req, res) => {
   }
 };
 
-module.exports = { getStats, listUsers, listRides, listParcels, sendInactivityReminders };
+const getKYCDrivers = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT d.*, u.name as driver_name, u.email as driver_email, u.phone as driver_phone 
+       FROM drivers d 
+       JOIN users u ON d.user_id = u.id 
+       WHERE d.kyc_status != 'unverified' 
+       ORDER BY d.id DESC`
+    );
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
+const verifyKYCDriver = async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { status } = req.body;
+    if (!['verified', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be verified or rejected.' });
+    }
+    await pool.query('UPDATE drivers SET kyc_status = ? WHERE id = ?', [status, driverId]);
+    res.json({ message: `Driver KYC status updated to ${status}.` });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
+module.exports = { getStats, listUsers, listRides, listParcels, sendInactivityReminders, getKYCDrivers, verifyKYCDriver };

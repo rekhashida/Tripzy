@@ -15,6 +15,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [rides, setRides] = useState([]);
   const [parcels, setParcels] = useState([]);
+  const [kycDrivers, setKycDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Navigation & Filtering states
@@ -47,23 +48,66 @@ export default function AdminDashboard() {
     }
   };
 
+  const [sosAlerts, setSosAlerts] = useState([]);
+
+  const loadKycDrivers = async () => {
+    try {
+      const { data } = await api.get('/admin/kyc');
+      setKycDrivers(data || []);
+    } catch (e) {
+      console.warn('Failed to load kyc drivers:', e.message);
+    }
+  };
+
+  const loadSosAlerts = async () => {
+    try {
+      const { data } = await api.get('/sos/admin/alerts');
+      setSosAlerts(data || []);
+    } catch (e) {
+      console.warn('Failed to load SOS alerts:', e.message);
+    }
+  };
+
+  const handleVerifyKyc = async (driverId, status) => {
+    try {
+      await api.post(`/admin/kyc/${driverId}/verify`, { status });
+      await loadKycDrivers();
+      loadData();
+    } catch (e) {
+      alert(e.response?.data?.error || 'Verification update failed.');
+    }
+  };
+
+  const handleResolveSos = async (alertId) => {
+    try {
+      await api.post(`/sos/admin/alerts/${alertId}/resolve`);
+      loadSosAlerts();
+    } catch (e) {
+      alert(e.response?.data?.error || 'Failed to resolve alert.');
+    }
+  };
+
   useEffect(() => {
     loadData();
+    loadKycDrivers();
+    loadSosAlerts();
   }, []);
 
   const loadData = async () => {
     try {
-      const [statsRes, usersRes, ridesRes, parcelsRes] = await Promise.all([
+      const [statsRes, usersRes, ridesRes, parcelsRes, kycRes] = await Promise.all([
         api.get('/admin/stats').catch(() => ({ data: null })),
         api.get('/admin/users').catch(() => ({ data: [] })),
         api.get('/admin/rides').catch(() => ({ data: [] })),
-        api.get('/admin/parcels').catch(() => ({ data: [] }))
+        api.get('/admin/parcels').catch(() => ({ data: [] })),
+        api.get('/admin/kyc').catch(() => ({ data: [] }))
       ]);
       
       setStats(statsRes.data);
       setUsers(usersRes.data || []);
       setRides(ridesRes.data || []);
       setParcels(parcelsRes.data || []);
+      setKycDrivers(kycRes.data || []);
     } catch (e) {
       console.error('Failed to load admin data:', e);
     } finally {
@@ -234,7 +278,9 @@ export default function AdminDashboard() {
           { id: 'users', label: '👥 User Accounts', color: '#10b981' },
           { id: 'rides', label: '🚗 Ride Log Audit', color: '#ec4899' },
           { id: 'parcels', label: '📦 Parcel Shipments', color: '#8b5cf6' },
-          { id: 'campaigns', label: '📢 User Engagement', color: '#f59e0b' }
+          { id: 'campaigns', label: '📢 User Engagement', color: '#f59e0b' },
+          { id: 'kyc', label: '🛡️ KYC Approvals', color: '#ef4444' },
+          { id: 'sos', label: '🚨 Panic SOS Monitor', color: '#dc2626' }
         ].map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -516,6 +562,187 @@ export default function AdminDashboard() {
           >
             <FiMail /> {campaignLoading ? 'Sending Nudges...' : 'Trigger Inactivity SMS Reminders'}
           </button>
+        </Card>
+      )}
+
+      {activeTab === 'kyc' && (
+        <Card style={{ border: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
+          <h3 className="card-title" style={{ fontSize: '1.25rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            🛡️ KYC Document Approval & Review Center
+          </h3>
+          <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>
+            Review driver profile details, uploaded verification files, and automated AI OCR match results. Approve or reject applications to authorize driver bookings.
+          </p>
+
+          {kycDrivers.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              No driver KYC submissions found. Drivers will appear here once they upload DL/RC documents.
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>Driver Info</th>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>Vehicle Details</th>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>Uploaded Docs</th>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>AI OCR Scan Matches</th>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>Status</th>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {kycDrivers.map((d) => (
+                    <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)', verticalAlign: 'top' }}>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <div><strong>{d.driver_name}</strong></div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{d.driver_email}</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{d.driver_phone}</div>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <div>No: {d.vehicle_number}</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Type: {d.vehicle_type}</div>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          {d.license_url && (
+                            <a href={d.license_url} target="_blank" rel="noreferrer" style={{ color: 'var(--primary-light)', textDecoration: 'underline' }}>
+                              License Doc 📄
+                            </a>
+                          )}
+                          {d.rc_url && (
+                            <a href={d.rc_url} target="_blank" rel="noreferrer" style={{ color: 'var(--primary-light)', textDecoration: 'underline' }}>
+                              RC Document 📄
+                            </a>
+                          )}
+                          {d.insurance_url && (
+                            <a href={d.insurance_url} target="_blank" rel="noreferrer" style={{ color: 'var(--primary-light)', textDecoration: 'underline' }}>
+                              Insurance Doc 📄
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        {d.ocr_license_number ? (
+                          <div style={{ background: 'var(--bg-card)', padding: '0.4rem', borderRadius: '4px', border: '1px solid var(--border-color)', minWidth: '180px' }}>
+                            <div style={{ fontSize: '0.75rem' }}>
+                              <strong>Scanned DL:</strong> {d.ocr_license_number}
+                            </div>
+                            <div style={{ fontSize: '0.75rem' }}>
+                              <strong>Scanned Name:</strong> {d.ocr_name}
+                            </div>
+                            <div style={{ fontSize: '0.75rem' }}>
+                              <strong>Expiry:</strong> {d.ocr_expiry_date ? new Date(d.ocr_expiry_date).toLocaleDateString() : 'N/A'}
+                            </div>
+                            <div style={{ 
+                              marginTop: '0.35rem', 
+                              fontSize: '0.75rem', 
+                              fontWeight: 700, 
+                              color: d.ocr_license_number === d.license_number ? 'var(--success)' : 'var(--danger)'
+                            }}>
+                              {d.ocr_license_number === d.license_number ? '✓ AI Match: 100%' : '✗ AI Match: MISMATCH'}
+                            </div>
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>No OCR details</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <Badge status={d.kyc_status === 'verified' ? 'completed' : d.kyc_status === 'rejected' ? 'cancelled' : 'pending'}>
+                          {d.kyc_status}
+                        </Badge>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.35rem' }}>
+                          <Button 
+                            variant="primary" 
+                            onClick={() => handleVerifyKyc(d.id, 'verified')}
+                            disabled={d.kyc_status === 'verified'}
+                            style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                          >
+                            Approve
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => handleVerifyKyc(d.id, 'rejected')}
+                            disabled={d.kyc_status === 'rejected'}
+                            style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {activeTab === 'sos' && (
+        <Card style={{ border: '1px solid var(--danger)', background: 'var(--bg-secondary)' }}>
+          <h3 className="card-title" style={{ fontSize: '1.25rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            🚨 Live SOS Emergency Monitor
+          </h3>
+          <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>
+            Real-time emergency distress signals, live GPS coordinates, and streamed Web Audio panic recordings.
+          </p>
+
+          {sosAlerts.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              No active or historical SOS alerts logged. All trips are safe!
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>Rider Info</th>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>Ride ID</th>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>Live GPS Location</th>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>Panic Audio Stream</th>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>Status</th>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sosAlerts.map((a) => (
+                    <tr key={a.id} style={{ borderBottom: '1px solid var(--border-color)', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <div><strong>{a.user_name}</strong></div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{a.user_phone}</div>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>#{a.ride_id || 'N/A'}</td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <a href={`https://maps.google.com/?q=${a.lat},${a.lng}`} target="_blank" rel="noreferrer" style={{ color: 'var(--primary-light)', textDecoration: 'underline' }}>
+                          📍 View on Map ({a.lat ? a.lat.toFixed(4) : '23.0225'}, {a.lng ? a.lng.toFixed(4) : '72.5714'})
+                        </a>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        {a.audio_url ? (
+                          <audio controls src={a.audio_url} style={{ height: '32px', width: '180px' }} />
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>No audio stream recorded</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <Badge status={a.status === 'active' ? 'cancelled' : 'completed'}>{a.status.toUpperCase()}</Badge>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        {a.status === 'active' && (
+                          <Button variant="outline" size="small" onClick={() => handleResolveSos(a.id)}>
+                            Resolve Alert
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Card>
       )}
     </div>

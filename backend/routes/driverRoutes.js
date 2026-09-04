@@ -5,7 +5,9 @@ const {
   getMatchingRides,
   updateAvailability,
   acceptRide,
-  updateRideStatus
+  updateRideStatus,
+  submitKYC,
+  getSettlements
 } = require('../controllers/driverController');
 
 const router = express.Router();
@@ -18,5 +20,7 @@ router.get('/requests', getMatchingRides);
 router.put('/availability', updateAvailability);
 router.post('/rides/:rideId/accept', acceptRide);
 router.post('/rides/:rideId/status', updateRideStatus);
+router.post('/kyc', submitKYC);
+router.get('/settlements', getSettlements);
 
 module.exports = router;

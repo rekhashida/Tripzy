@@ -32,7 +32,11 @@ export default function RideBooking() {
   const [vehicleType, setVehicleType] = useState('sedan');
   const [estimatedVehicle, setEstimatedVehicle] = useState('sedan');
   const [luggageSize, setLuggageSize] = useState('medium');
-  const [vehicleSuggestions, setVehicleSuggestions] = useState([]);
+  const [isEv, setIsEv] = useState(false);
+  const [isCorporate, setIsCorporate] = useState(false);
+  const [isCustomOffer, setIsCustomOffer] = useState(false);
+  const [offeredFare, setOfferedFare] = useState('');
+  const [multimodalInfo, setMultimodalInfo] = useState(null);
   const [fare, setFare] = useState(null);
   const [distance, setDistance] = useState(null);
   const [duration, setDuration] = useState(null);
@@ -69,6 +73,7 @@ export default function RideBooking() {
       setDistance(data.distanceKm);
       setDuration(data.durationMin);
       setSurgeInfo(data.breakdown);
+      setMultimodalInfo(data.multimodal);
       setVehicleSuggestions(data.suggestions || []);
       setMsg(`Estimated fare: ₹${data.fare} | Distance: ${data.distanceKm} km | Duration: ~${data.durationMin} min`);
       setMsgType('success');
@@ -109,7 +114,9 @@ export default function RideBooking() {
         vehicle_type: vehicleType,
         luggage_size: luggageSize,
         is_pooling: false,
-        scheduled_at: isScheduled ? scheduledTime : null
+        scheduled_at: isScheduled ? scheduledTime : null,
+        is_ev: isEv,
+        is_corporate: isCorporate
       });
       
       if (data.isScheduled) {
@@ -279,6 +286,46 @@ export default function RideBooking() {
               ]}
             />
           </div>
+
+          <div style={{ display: 'flex', gap: '1.25rem', marginTop: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--success)', fontWeight: 600, cursor: 'pointer' }}>
+              <input type="checkbox" checked={isEv} onChange={(e) => setIsEv(e.target.checked)} />
+              🌿 EV Only (Zero Emission)
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--primary-light)', fontWeight: 600, cursor: 'pointer' }}>
+              <input type="checkbox" checked={isCorporate} onChange={(e) => setIsCorporate(e.target.checked)} />
+              💼 Corporate Business Trip (GST)
+            </label>
+          </div>
+
+          {/* Budget Subscription Store Banner */}
+          <div style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(99, 102, 241, 0.15))', border: '1px solid var(--success)', borderRadius: '8px', padding: '0.75rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--success)' }}>🎓 Student & Family Budget Passes</span>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Get 20 rides @ ₹19.95/trip with 0% surge!</div>
+              </div>
+              <button 
+                type="button" 
+                onClick={async () => {
+                  if (!pickup.address || !drop.address) return alert('Select pickup and drop address first!');
+                  try {
+                    const { data } = await api.post('/commute/passes', {
+                      pickup_address: pickup.address,
+                      drop_address: drop.address,
+                      pass_type: 'student'
+                    });
+                    alert(data.message || 'Pass activated!');
+                  } catch (e) {
+                    alert(e.response?.data?.error || 'Pass activation failed');
+                  }
+                }}
+                style={{ background: 'var(--success)', color: '#fff', border: 'none', padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Buy ₹399 Pass
+              </button>
+            </div>
+          </div>
         </div>
 
         {!fare ? (
@@ -318,6 +365,39 @@ export default function RideBooking() {
               <div className="ai-insight-text">
                 {getAiPriceInsight().text}
               </div>
+            </div>
+
+            {/* Smart Bidding Offer Card */}
+            <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--primary)', borderRadius: '10px', padding: '0.85rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary-light)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  🏷️ Offer Custom Price (Smart Bidding)
+                </span>
+                <input 
+                  type="checkbox" 
+                  checked={isCustomOffer} 
+                  onChange={(e) => setIsCustomOffer(e.target.checked)} 
+                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                />
+              </div>
+
+              {isCustomOffer && (
+                <div style={{ marginTop: '0.75rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                    Propose your own budget price. Nearby drivers can accept or counter-bid!
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary-light)' }}>₹</span>
+                    <input 
+                      type="number" 
+                      placeholder={`Est: ₹${fare || 150}`} 
+                      value={offeredFare} 
+                      onChange={(e) => setOfferedFare(e.target.value)}
+                      style={{ flex: 1, background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.4rem 0.6rem', fontSize: '0.9rem', fontWeight: 700 }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>

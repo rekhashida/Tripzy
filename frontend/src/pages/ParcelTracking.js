@@ -196,7 +196,7 @@ export default function ParcelTracking() {
           </div>
         </Card>
 
-        {/* Addresses */}
+        {/* Addresses & Multi-Stop Waypoints */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
             <span style={{ color: 'var(--success)' }}>📍</span>
@@ -205,10 +205,21 @@ export default function ParcelTracking() {
               <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{parcel.pickup_address}</div>
             </div>
           </div>
+
+          {parcel.stops && parcel.stops.length > 0 && parcel.stops.map((stop, idx) => (
+            <div key={stop.id || idx} style={{ display: 'flex', alignItems: 'start', gap: '0.5rem', paddingLeft: '1rem', borderLeft: '2px dashed var(--primary)' }}>
+              <span style={{ color: 'var(--primary)' }}>📍</span>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>Stop #{stop.stop_order} Waypoint ({stop.recipient_name})</div>
+                <div style={{ fontSize: '0.825rem', fontWeight: 600 }}>{stop.address}</div>
+              </div>
+            </div>
+          ))}
+
           <div style={{ display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
             <span style={{ color: 'var(--danger)' }}>🏁</span>
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Recipient Drop Address</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Final Recipient Drop Address</div>
               <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{parcel.drop_address}</div>
             </div>
           </div>

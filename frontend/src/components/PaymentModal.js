@@ -2,47 +2,31 @@ import React, { useState } from 'react';
 import { FiCreditCard, FiDollarSign, FiCheckCircle } from 'react-icons/fi';
 import api from '../services/api';
 import Modal from './Modal';
-import Input from './Input';
 import Button from './Button';
 import Card from './Card';
 import Badge from './Badge';
 import { useAuth } from '../context/AuthContext';
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function PaymentModal({ isOpen, onClose, amount, rideId, parcelId, onSuccess }) {
   const { user, fetchProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [walletLoading, setWalletLoading] = useState(false);
-  const [paymentId, setPaymentId] = useState('');
   const [msg, setMsg] = useState('');
   const [msgType, setMsgType] = useState('info');
-
-  const handlePayment = async () => {
-    if (!paymentId) {
-      setMsg('Please enter payment ID from Razorpay');
-      setMsgType('error');
-      return;
-    }
-    setLoading(true);
-    setMsg('');
-    try {
-      await api.post('/payments/verify', {
-        razorpay_payment_id: paymentId,
-        ride_id: rideId,
-        parcel_id: parcelId
-      });
-      setMsg('Payment verified successfully!');
-      setMsgType('success');
-      setTimeout(() => {
-        onSuccess?.();
-        onClose();
-      }, 2000);
-    } catch (e) {
-      setMsg(e.response?.data?.error || 'Payment verification failed');
-      setMsgType('error');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleWalletPayment = async () => {
     setWalletLoading(true);
@@ -68,21 +52,75 @@ export default function PaymentModal({ isOpen, onClose, amount, rideId, parcelId
     }
   };
 
-  const createOrder = async () => {
+  const handleGatewayPayment = async () => {
     setLoading(true);
-    setMsg('');
+    setMsg('Initializing gateway checkout...');
+    setMsgType('info');
     try {
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Failed to load Razorpay script.');
+      }
+
       const { data } = await api.post('/payments/create-order', {
         amount: amount,
         ride_id: rideId,
         parcel_id: parcelId
       });
-      setMsg(`Order created! Order ID: ${data.orderId}. Please complete payment using Razorpay and enter the payment ID below.`);
-      setMsgType('info');
+
+      const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'Tripzy Payment',
+        description: rideId ? `Payment for Ride #${rideId}` : `Payment for Parcel #${parcelId}`,
+        order_id: data.orderId,
+        handler: async function (response) {
+          setLoading(true);
+          setMsg('Verifying transaction signature...');
+          setMsgType('info');
+          try {
+            await api.post('/payments/verify', {
+              razorpay_order_id: response.razorpay_order_id || data.orderId,
+              razorpay_payment_id: response.razorpay_payment_id || `pay_mock_${Date.now()}`,
+              razorpay_signature: response.razorpay_signature || ''
+            });
+            setMsg('Transaction completed successfully! 🎉');
+            setMsgType('success');
+            await fetchProfile();
+            setTimeout(() => {
+              onSuccess?.();
+              onClose();
+            }, 1500);
+          } catch (verifyErr) {
+            setMsg(verifyErr.response?.data?.error || 'Payment verification failed.');
+            setMsgType('error');
+          } finally {
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+          contact: user?.phone || ''
+        },
+        theme: {
+          color: '#0f4c9c'
+        },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+            setMsg('Payment cancelled.');
+            setMsgType('info');
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
     } catch (e) {
-      setMsg(e.response?.data?.error || 'Failed to create order');
+      setMsg(e.response?.data?.error || e.message || 'Payment failed.');
       setMsgType('error');
-    } finally {
       setLoading(false);
     }
   };
@@ -149,38 +187,16 @@ export default function PaymentModal({ isOpen, onClose, amount, rideId, parcelId
       <div style={{ marginBottom: '1.5rem' }}>
         <Button
           variant="primary"
-          onClick={createOrder}
+          onClick={handleGatewayPayment}
           disabled={loading || walletLoading}
           className="w-full"
-          style={{ marginBottom: '1rem' }}
         >
-          <FiCreditCard /> Create Payment Order
+          <FiCreditCard /> {loading ? 'Opening Checkout...' : 'Pay with Card / UPI'}
         </Button>
-
-        <Input
-          type="text"
-          label="Razorpay Payment ID"
-          value={paymentId}
-          onChange={(e) => setPaymentId(e.target.value)}
-          placeholder="Enter payment ID from Razorpay"
-          disabled={walletLoading}
-        />
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        <Button
-          variant="primary"
-          onClick={handlePayment}
-          disabled={loading || walletLoading || !paymentId}
-          className="flex-1"
-        >
-          {loading ? 'Verifying...' : (
-            <>
-              <FiCheckCircle /> Verify Payment
-            </>
-          )}
-        </Button>
-        <Button variant="outline" onClick={onClose} disabled={walletLoading}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+        <Button variant="outline" onClick={onClose} disabled={loading || walletLoading}>
           Cancel
         </Button>
       </div>
