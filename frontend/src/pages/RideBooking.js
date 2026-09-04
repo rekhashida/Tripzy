@@ -75,7 +75,7 @@ export default function RideBooking() {
       setSurgeInfo(data.breakdown);
       setMultimodalInfo(data.multimodal);
       setVehicleSuggestions(data.suggestions || []);
-      setMsg(`Estimated fare: ₹${data.fare} | Distance: ${data.distanceKm} km | Duration: ~${data.durationMin} min`);
+      setMsg('');
       setMsgType('success');
     } catch (e) {
       setMsg(e.response?.data?.error || 'Failed to estimate fare. Please try again.');
