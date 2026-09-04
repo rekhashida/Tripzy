@@ -359,7 +359,6 @@ const acceptBid = async (req, res) => {
 
     const selectedBid = bids[0];
 
-    // Update ride fare to agreed bid fare & assign driver
     await pool.query(
       'UPDATE rides SET fare = ?, driver_id = ?, status = ? WHERE id = ?',
       [selectedBid.bid_amount, selectedBid.driver_id, 'driver_assigned', rideId]
@@ -377,13 +376,13 @@ const acceptBid = async (req, res) => {
 module.exports = {
   estimateFare,
   createRide,
+  assignDriver,
+  verifyPickupOTP,
+  verifyDropOTP,
   myRides,
   getRide,
   cancelRide,
-  acceptRide,
-  updateLocation,
-  verifyPickupOTP,
-  verifyDropOTP,
+  getRideChats,
   checkScheduledRides,
   submitBid,
   getBidsForRide,

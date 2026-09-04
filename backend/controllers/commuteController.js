@@ -48,8 +48,7 @@ const buyCommutePass = async (req, res) => {
     // Deduct balance
     await pool.query('UPDATE users SET wallet_balance = wallet_balance - ? WHERE id = ?', [totalCost, userId]);
 
-    // Expiry: 7 days or 30 days
-    const days = pass_type === 'weekly' ? 7 : 30;
+    // Expiry Date
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + days);
 
