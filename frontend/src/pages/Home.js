@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { 
   FiNavigation, 
   FiPackage, 
@@ -18,6 +19,7 @@ import Card from '../components/Card';
 
 export default function Home() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const isDriver = user && user.role === 'driver';
@@ -320,8 +322,8 @@ export default function Home() {
               }}>
                 🚗
               </div>
-              <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)' }}>Ride</div>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Book a private ride instantly</p>
+              <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)' }}>{t('book_ride')}</div>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>{t('smart_bidding_title')}</p>
             </div>
 
             <div 
@@ -356,8 +358,8 @@ export default function Home() {
               }}>
                 📦
               </div>
-              <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)' }}>Package</div>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Send and track couriers safely</p>
+              <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)' }}>{t('parcel_delivery')}</div>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>{t('parcel_tsp_title')}</p>
             </div>
 
             <div 
@@ -392,8 +394,8 @@ export default function Home() {
               }}>
                 👥
               </div>
-              <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)' }}>Ride Sharing</div>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Join pools and share expenses</p>
+              <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)' }}>{t('ride_pooling')}</div>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>{t('multimodal_title')}</p>
             </div>
           </div>
         </div>

@@ -52,7 +52,7 @@ const loadRazorpayScript = () => {
 
 export default function Nav() {
   const { user, logout, fetchProfile } = useAuth();
-  const { lang, changeLanguage, t } = useLanguage();
+  const { lang, setLang, t } = useLanguage();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
