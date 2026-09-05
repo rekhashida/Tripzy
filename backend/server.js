@@ -217,6 +217,18 @@ app.use('/api/sos', sosRoutes);
 app.use('/api/commute', commuteRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true, message: 'Tripzy API' }));
+
+// Serve production static build of frontend if available
+const frontendBuildPath = path.join(__dirname, '../frontend/build');
+if (require('fs').existsSync(frontendBuildPath)) {
+  app.use(express.static(frontendBuildPath));
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(frontendBuildPath, 'index.html'));
+    }
+  });
+}
+
 app.use(errorHandler);
 
 setupSocket(io);
