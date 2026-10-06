@@ -15,18 +15,20 @@ const pool = mysql.createPool({
 
 async function run(shouldExit = true) {
   try {
-    console.log('Connecting to database...');
-    const passwordHash = await bcrypt.hash('TripzyDemoSecuredPass2026!', 10);
+    const adminHash = await bcrypt.hash('admin123', 10);
+    const driverHash = await bcrypt.hash('driver123', 10);
+    const riderHash = await bcrypt.hash('rider123', 10);
+    const userHash = await bcrypt.hash('user123', 10);
 
     // 1. Seed Users
     const users = [
-      { name: 'Tripzy Admin', email: 'admin@tripzy.com', password: passwordHash, phone: '9999999999', role: 'admin', wallet_balance: 5000.00 },
-      { name: 'Rajesh Kumar', email: 'driver@tripzy.com', password: passwordHash, phone: '8888888888', role: 'driver', wallet_balance: 1000.00 },
-      { name: 'Somabhai Rickshawala', email: 'auto_driver@tripzy.com', password: passwordHash, phone: '7777777777', role: 'driver', wallet_balance: 1000.00 },
-      { name: 'Amit Sharma', email: 'rider@tripzy.com', password: passwordHash, phone: '9876543210', role: 'user', wallet_balance: 1250.00 },
-      { name: 'Priya Patel', email: 'priya@tripzy.com', password: passwordHash, phone: '9123456780', role: 'user', wallet_balance: 600.00 },
-      { name: 'Rahul Mehta', email: 'rahul@tripzy.com', password: passwordHash, phone: '9123456781', role: 'user', wallet_balance: 450.00 },
-      { name: 'Sneha Reddy', email: 'sneha@tripzy.com', password: passwordHash, phone: '9123456782', role: 'user', wallet_balance: 800.00 }
+      { name: 'Tripzy Admin', email: 'admin@tripzy.com', password: adminHash, phone: '9999999999', role: 'admin', wallet_balance: 5000.00 },
+      { name: 'Rajesh Kumar', email: 'driver@tripzy.com', password: driverHash, phone: '8888888888', role: 'driver', wallet_balance: 1000.00 },
+      { name: 'Somabhai Rickshawala', email: 'auto_driver@tripzy.com', password: driverHash, phone: '7777777777', role: 'driver', wallet_balance: 1000.00 },
+      { name: 'Amit Sharma', email: 'rider@tripzy.com', password: riderHash, phone: '9876543210', role: 'user', wallet_balance: 1250.00 },
+      { name: 'Priya Patel', email: 'priya@tripzy.com', password: userHash, phone: '9123456780', role: 'user', wallet_balance: 600.00 },
+      { name: 'Rahul Mehta', email: 'rahul@tripzy.com', password: userHash, phone: '9123456781', role: 'user', wallet_balance: 450.00 },
+      { name: 'Sneha Reddy', email: 'sneha@tripzy.com', password: userHash, phone: '9123456782', role: 'user', wallet_balance: 800.00 }
     ];
 
     console.log('Seeding users...');

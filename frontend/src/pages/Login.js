@@ -295,9 +295,10 @@ export default function Login() {
           </h4>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             <button
+              type="button"
               onClick={() => {
                 setEmail('rider@tripzy.com');
-                setPassword('TripzyDemoSecuredPass2026!');
+                setPassword('rider123');
                 setLoginMode('email');
               }}
               style={{
@@ -315,9 +316,10 @@ export default function Login() {
               🙋‍♂️ Passenger / Rider
             </button>
             <button
+              type="button"
               onClick={() => {
                 setEmail('driver@tripzy.com');
-                setPassword('TripzyDemoSecuredPass2026!');
+                setPassword('driver123');
                 setLoginMode('email');
               }}
               style={{
@@ -335,9 +337,10 @@ export default function Login() {
               🚗 Sedan Driver
             </button>
             <button
+              type="button"
               onClick={() => {
                 setEmail('auto_driver@tripzy.com');
-                setPassword('TripzyDemoSecuredPass2026!');
+                setPassword('driver123');
                 setLoginMode('email');
               }}
               style={{
@@ -355,9 +358,10 @@ export default function Login() {
               🛺 Auto Rickshaw Driver
             </button>
             <button
+              type="button"
               onClick={() => {
                 setEmail('admin@tripzy.com');
-                setPassword('TripzyDemoSecuredPass2026!');
+                setPassword('admin123');
                 setLoginMode('email');
               }}
               style={{
